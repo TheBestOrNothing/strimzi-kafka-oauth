@@ -2,47 +2,44 @@
  * Copyright 2017-2019, Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
-package io.strimzi.examples.producer;
+package io.strimzi.examples.consumer;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.oauth.client.ClientConfig;
 import io.strimzi.kafka.oauth.common.Config;
 import io.strimzi.kafka.oauth.common.ConfigProperties;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.AuthenticationException;
 import org.apache.kafka.common.errors.AuthorizationException;
-import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.errors.InterruptException;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.JOSEException;
 
-import java.io.PrintWriter;
 import java.text.ParseException;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Date;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Properties;
 
 /**
- * An example synchronous (single-threaded) producer implementation
+ * An example consumer implementation
  */
 @SuppressFBWarnings("THROWS_METHOD_THROWS_RUNTIMEEXCEPTION")
-public class WhispeerProducer {
+public class WhispeerConsumer {
 
     /**
      * A main method
@@ -77,64 +74,82 @@ public class WhispeerProducer {
         //  See examples README.md for more info.
 
         //final String accessToken = external.getValue(ClientConfig.OAUTH_ACCESS_TOKEN, null);
-        //final String accessToken = genToken();
         String token = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJMR25qdjVWVXdfdXFJd0QxZGtlQnlRTHY1SEVOaDk1bldTaU5oNDBZNW1BIn0.eyJleHAiOjE2ODM3MTM4NzUsImlhdCI6MTY4MzY3Nzg3NSwianRpIjoiY2U3YjRmYzItNWNkMS00ZDE5LTkyNjUtM2MzOGRhNDI0NTU0IiwiaXNzIjoiaHR0cDovL2tleWNsb2FrOjgwODAvYXV0aC9yZWFsbXMvZGVtbyIsImF1ZCI6ImthZmthIiwic3ViIjoiODQzZTA3MGEtNjA0MC00Mzk1LWI0MzAtMzllOWE5MzE4OWExIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoia2Fma2EtcHJvZHVjZXItY2xpZW50Iiwic2Vzc2lvbl9zdGF0ZSI6ImI5NDJlMzE2LTllNmQtNGEwNy04MDExLWViZmY0YTg1NWQ0MiIsImFjciI6IjEiLCJyZXNvdXJjZV9hY2Nlc3MiOnsia2Fma2EiOnsicm9sZXMiOlsia2Fma2EtdG9waWM6c3VwZXJhcHBfKjpvd25lciJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsInNpZCI6ImI5NDJlMzE2LTllNmQtNGEwNy04MDExLWViZmY0YTg1NWQ0MiIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwicHJlZmVycmVkX3VzZXJuYW1lIjoiYWxpY2UiLCJlbWFpbCI6ImFsaWNlQGV4YW1wbGUuY29tIn0.DBAq67KF9rfNVEy3L1nhaiHQIGXWBNlOW8QTRhNH1NTJ0DqZ_grFCLeckkVbr8BXSVWLHj39mx1ZCYU_1AIZB-0i8riRhqT1T5bgpAv2MkutmQEWd2FpiC5IVK1q8Vyw0bo2MDQInvjUQn9tB4NBNNzogDaBNRmatUD-m2y3tAJ3T-sl4fiaMXX6bzaf55r4LfwVYkP0TyeBzQoXCyUtPlP2ECKWMt6A4MTjT6ysfE7Odmk_VGploUzhSMG_BEIGcA8tFcYx4nWjV8f5PaIwpz8cmBlZBQjnfU4gnKk1U-cl6gb3EMtu9YLiqGY8ktx0P5QOm4q8h5TRd5dtuFIBHg";
         final String accessToken = getToken(token);
         System.out.println(accessToken);
         defaults.setProperty(ClientConfig.OAUTH_ACCESS_TOKEN, accessToken);
-        
+
         if (accessToken == null) {
-            System.out.println("accessToken is null");
-            defaults.setProperty(Config.OAUTH_CLIENT_ID, "kafka-producer-client");
-            defaults.setProperty(Config.OAUTH_CLIENT_SECRET, "kafka-producer-client-secret");
+            defaults.setProperty(Config.OAUTH_CLIENT_ID, "kafka-consumer-client");
+            defaults.setProperty(Config.OAUTH_CLIENT_SECRET, "kafka-consumer-client-secret");
         }
 
         // Use 'preferred_username' rather than 'sub' for principal name
         if (isAccessTokenJwt(external)) {
-            System.out.println("accessToken is JWT");
             defaults.setProperty(Config.OAUTH_USERNAME_CLAIM, "preferred_username");
         }
 
         // Resolve external configurations falling back to provided defaults
         ConfigProperties.resolveAndExportToSystemProperties(defaults);
+        Properties props = buildConsumerConfig(defaults);
 
-        Properties props = buildProducerConfig(defaults);
-
-        System.out.println("-------------props content ----------------");
-        PrintWriter writer = new PrintWriter(System.out);
-        props.list(writer);
-        writer.flush();
-        System.out.println("-------------props content END ----------------");
-
-        Producer<String, String> producer = new KafkaProducer<>(props);
+        //Properties props = buildConsumerConfig();
+        Consumer<String, String> consumer = new KafkaConsumer<>(props);
 
         for (int i = 0; ; i++) {
             try {
+                consumer.subscribe(Arrays.asList(topic));
 
-                producer.send(new ProducerRecord<>(topic, "Message " + i))
-                        .get();
-
-                System.out.println("Produced Message " + i);
-
-            } catch (InterruptedException e) {
-                throw new RuntimeException("Interrupted while sending!");
-
-            } catch (ExecutionException e) {
-                if (e.getCause() instanceof AuthenticationException
-                        || e.getCause() instanceof AuthorizationException) {
-                    producer.close();
-                    producer = new KafkaProducer<>(props);
-                } else {
-                    throw new RuntimeException("Failed to send message: " + i, e);
+                while (true) {
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
+                    for (ConsumerRecord<String, String> record : records) {
+                        System.out.println("Consumed message - " + i + ": " + record.value());
+                    }
                 }
-            }
+            } catch (InterruptException e) {
+                throw new RuntimeException("Interrupted while consuming message - " + i + "!");
 
-            try {
-                Thread.sleep(20000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("Interrupted while sleeping!");
+            } catch (AuthenticationException | AuthorizationException e) {
+                consumer.close();
+                consumer = new KafkaConsumer<>(props);
             }
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean isAccessTokenJwt(Config config) {
+        String legacy = config.getValue(Config.OAUTH_TOKENS_NOT_JWT);
+        if (legacy != null) {
+            System.out.println("[WARN] Config option 'oauth.tokens.not.jwt' is deprecated. Use 'oauth.access.token.is.jwt' (with reverse meaning) instead.");
+        }
+        return legacy != null ? !Config.isTrue(legacy) :
+                config.getValueAsBoolean(Config.OAUTH_ACCESS_TOKEN_IS_JWT, true);
+    }
+
+    /**
+     * Build KafkaConsumer properties. The specified values are defaults that can be overridden
+     * through runtime system properties or env variables.
+     *
+     * @return Configuration properties
+     */
+    private static Properties buildConsumerConfig(Properties p) {
+
+        //Properties p = new Properties();
+
+        p.setProperty("security.protocol", "SASL_PLAINTEXT");
+        p.setProperty("sasl.mechanism", "OAUTHBEARER");
+        p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
+        p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
+
+        p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        p.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+
+        p.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "a_consumer-group");
+        p.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10");
+        p.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+
+        return ConfigProperties.resolve(p);
     }
 
     private static String getToken(String token) {
@@ -190,65 +205,4 @@ public class WhispeerProducer {
 
         return token;
     }
-    
-    private static JsonNode[] getGrants() {
-        // Create an ObjectMapper instance to read and write JSON
-        ObjectMapper mapper = new ObjectMapper();
-
-        // Define the JSON array string
-        String jsonArrayString = "[{\"key1\":\"value1\"},{\"key2\":\"value2\"}]";
-
-        // Parse the JSON array string into an array of JsonNode objects
-        JsonNode[] jsonArrayNodes = null;
-        try {
-            jsonArrayNodes = mapper.readValue(jsonArrayString, JsonNode[].class);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error parsing JSON: " + e.getMessage());
-        }
-        
-        return jsonArrayNodes;
-    }
-
-    @SuppressWarnings("deprecation")
-    private static boolean isAccessTokenJwt(Config config) {
-        String legacy = config.getValue(Config.OAUTH_TOKENS_NOT_JWT);
-        if (legacy != null) {
-            System.out.println("[WARN] Config option 'oauth.tokens.not.jwt' is deprecated. Use 'oauth.access.token.is.jwt' (with reverse meaning) instead.");
-        }
-        return legacy != null ? !Config.isTrue(legacy) :
-                config.getValueAsBoolean(Config.OAUTH_ACCESS_TOKEN_IS_JWT, true);
-    }
-
-    /**
-     * Build KafkaProducer properties. The specified values are defaults that can be overridden
-     * through runtime system properties or env variables.
-     *
-     * @return Configuration properties
-     */
-    private static Properties buildProducerConfig(Properties p) {
-
-        //Properties p = new Properties();
-
-        p.setProperty("security.protocol", "SASL_PLAINTEXT");
-        p.setProperty("sasl.mechanism", "OAUTHBEARER");
-        p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
-        p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
-
-        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        p.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-
-        p.setProperty(ProducerConfig.ACKS_CONFIG, "all");
-
-        // Adjust re-authentication options
-        // See: strimzi-kafka-oauth/README.md
-        p.setProperty("sasl.login.refresh.buffer.seconds", "30");
-        p.setProperty("sasl.login.refresh.min.period.seconds", "30");
-        p.setProperty("sasl.login.refresh.window.factor", "0.8");
-        p.setProperty("sasl.login.refresh.window.jitter", "0.01");
-
-        return ConfigProperties.resolve(p);
-    }
-
 }
-

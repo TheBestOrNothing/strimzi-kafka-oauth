@@ -67,6 +67,7 @@ import static io.strimzi.kafka.oauth.common.Config.isTrue;
 import static io.strimzi.kafka.oauth.common.HttpUtil.post;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.urlencode;
+import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
 
 /**
  * An authorizer that grants access based on security policies managed in Keycloak Authorization Services.
@@ -475,6 +476,7 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
                 return Collections.nCopies(actions.size(), AuthorizationResult.DENIED);
             }
 
+            debugLogJWT(log, token.value());
             grants = (JsonNode) token.getPayload();
 
             if (grants == null) {

@@ -4,6 +4,8 @@
  */
 package io.strimzi.kafka.oauth.server;
 
+import com.nimbusds.jose.JWSObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.strimzi.kafka.oauth.common.Config;
 import io.strimzi.kafka.oauth.common.ConfigException;
@@ -12,6 +14,7 @@ import io.strimzi.kafka.oauth.common.BearerTokenWithPayload;
 import io.strimzi.kafka.oauth.common.IOUtil;
 import io.strimzi.kafka.oauth.common.PrincipalExtractor;
 import io.strimzi.kafka.oauth.common.TimeUtil;
+import io.strimzi.kafka.oauth.common.NimbusPayloadTransformer;
 import io.strimzi.kafka.oauth.jsonpath.JsonPathFilterQuery;
 import io.strimzi.kafka.oauth.metrics.IntrospectValidationSensorKeyProducer;
 import io.strimzi.kafka.oauth.metrics.JwksValidationSensorKeyProducer;
@@ -44,10 +47,15 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 
 import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
+import static io.strimzi.kafka.oauth.common.TokenIntrospection.introspectAccessToken;
+import static io.strimzi.kafka.oauth.common.JSONUtil.readJSON;
+
 
 /**
  * This <em>CallbackHandler</em> implements the OAuth2 support.
@@ -600,12 +608,38 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
         }
 
         String token = callback.tokenValue();
+        NimbusPayloadTransformer transformer = new NimbusPayloadTransformer();
 
         try {
             debugLogToken(token);
 
-            TokenInfo ti = validateToken(token);
-            callback.token(new BearerTokenWithPayloadImpl(ti));
+            //TokenInfo ti = validateToken(token);
+            //callback.token(new BearerTokenWithPayloadImpl(ti));
+
+            //Add following content to bypass validate token by Oauth2 server
+            TokenInfo ti = introspectAccessToken(token, principalExtractor);
+            BearerTokenWithPayload tokenWithPayload = new BearerTokenWithPayloadImpl(ti);
+
+            //Payload means the resource to access 
+            JWSObject jws = JWSObject.parse(token);
+            JsonNode parsed = jws.getPayload().toType(transformer);
+
+            if (parsed.has("gitcoins")) {
+                log.debug("gitcoins asText: " + parsed.get("gitcoins").asText());
+                log.debug("----------------------------------------");
+                byte[] resourceAccessBytes = parsed.get("gitcoins").asText().getBytes("UTF-8");
+                InputStream inputStream = new ByteArrayInputStream(resourceAccessBytes);
+                JsonNode nodes = readJSON(inputStream, JsonNode.class);
+                for (JsonNode permission : nodes) {
+                    log.debug(permission.toString());
+                }
+                tokenWithPayload.setPayload(nodes);   
+            } else {
+                log.debug("resource_access is null ----------- ");
+            }
+
+            callback.token(tokenWithPayload);
+            
             if (log.isDebugEnabled()) {
                 log.debug("Set validated token on callback: " + callback.token());
             }
