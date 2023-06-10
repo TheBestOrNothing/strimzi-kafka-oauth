@@ -104,7 +104,6 @@
         <module>oauth-common</module>
         <module>oauth-client</module>
         <module>oauth-server</module>
-        <module>oauth-server-plain</module>
         <module>oauth-keycloak-authorizer</module>
         <module>examples/consumer</module>
         <module>examples/producer</module>
@@ -145,11 +144,6 @@
             <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>kafka-oauth-server</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.strimzi</groupId>
-                <artifactId>kafka-oauth-server-plain</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
