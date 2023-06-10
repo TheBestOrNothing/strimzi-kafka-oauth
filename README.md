@@ -10,7 +10,7 @@ Strimzi OAuth for Apache Kafka
 [Apache Kafka®](https://kafka.apache.org) comes with basic OAuth2 support in the form of SASL based authentication module which provides client-server retrieval, exchange and validation of access token used as credentials.
 For real world usage, extensions have to be provided in the form of JAAS callback handlers which is what Strimzi Kafka OAuth does.
 
-Strimzi Kafka OAuth modules provide support for OAuth2 as authentication mechanism when establishing a session with Kafka broker(gitcoins).
+Strimzi Kafka OAuth modules provide support for OAuth2 as authentication mechanism when establishing a session with Kafka broker.
 
 <!-- TOC depthFrom:2 -->
 
@@ -58,6 +58,7 @@ Strimzi Kafka OAuth modules provide support for OAuth2 as authentication mechani
   - [Using the metrics with Prometheus](#using-the-metrics-with-prometheus)
   - [Some examples of PromQL queries](#some-examples-of-promql-queries)
 - [Demo](#demo)
+- [QuickStart](#quickstart)
   
 <!-- /TOC -->
 
@@ -1371,6 +1372,56 @@ Note, that this gives reliable results if scrape period is 15 seconds. If scrape
     idelta(strimzi_oauth_http_requests_count{outcome="error",error_type="tls"}[1m])
 ```
 
+
+
+QuickStart
+----
+
+- Build and Install Libs in the project:
+```
+    mvn clean install -DskipTests
+    cp following lib to the authlibs dir in whisper project
+    kafka-oauth-client-1.0.0-SNAPSHOT.jar               
+    kafka-oauth-client-1.0.0-SNAPSHOT-javadoc.jar       
+    kafka-oauth-client-1.0.0-SNAPSHOT-sources.jar       
+    kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT.jar
+    kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT-javadoc.jar
+    kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT-sources.jar
+    kafka-oauth-server-1.0.0-SNAPSHOT.jar
+    kafka-oauth-server-1.0.0-SNAPSHOT-javadoc.jar
+    kafka-oauth-server-1.0.0-SNAPSHOT-sources.jar
+    kafka-oauth-common-1.0.0-SNAPSHOT-javadoc.jar       
+    kafka-oauth-common-1.0.0-SNAPSHOT.jar               
+    kafka-oauth-common-1.0.0-SNAPSHOT-sources.jar       
+    nimbus-jose-jwt-9.10.jar
+```
+
+- Create new keyID and token with KafkaAdminToken in oauth-client dir:
+```
+    java -cp target/*:target/lib/* io.strimzi.kafka.oauth.client.KafkaAdminToken
+```
+
+- Add the keyID and token to server.properies in config dir:
+
+- Start Zookeeper:
+```
+    bin/zookeeper-server-start.sh config/zookeeper.properties
+```
+
+- Start Kafka:
+```
+    bin/kafka-server-start.sh config/server.properties
+```
+
+- Start producer in example/producer dir:
+```
+    java -cp target/*:target/lib/* io.strimzi.examples.producer.WhispeerProducer
+```
+
+- Start consumer in example/consumer dir:
+```
+    java -cp target/*:target/lib/* io.strimzi.examples.consumer.WhispeerConsumer
+```
 
 
 Demo

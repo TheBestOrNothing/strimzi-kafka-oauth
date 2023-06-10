@@ -7,7 +7,7 @@ package io.strimzi.kafka.oauth.client;
 import io.strimzi.kafka.oauth.common.ConfigException;
 import io.strimzi.kafka.oauth.common.MetricsHandler;
 import io.strimzi.kafka.oauth.common.Config;
-import io.strimzi.kafka.oauth.common.ConfigUtil;
+//import io.strimzi.kafka.oauth.common.ConfigUtil;
 import io.strimzi.kafka.oauth.common.PrincipalExtractor;
 import io.strimzi.kafka.oauth.common.TokenInfo;
 import io.strimzi.kafka.oauth.client.metrics.ClientAuthenticationSensorKeyProducer;
@@ -22,8 +22,8 @@ import org.apache.kafka.common.security.oauthbearer.OAuthBearerTokenCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSocketFactory;
+//import javax.net.ssl.HostnameVerifier;
+//import javax.net.ssl.SSLSocketFactory;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.AppConfigurationEntry;
@@ -35,14 +35,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import static io.strimzi.kafka.oauth.common.ConfigUtil.getConnectTimeout;
-import static io.strimzi.kafka.oauth.common.ConfigUtil.getReadTimeout;
+//import static io.strimzi.kafka.oauth.common.ConfigUtil.getConnectTimeout;
+//import static io.strimzi.kafka.oauth.common.ConfigUtil.getReadTimeout;
 import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithAccessToken;
-import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithClientSecret;
-import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithPassword;
-import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithRefreshToken;
+//import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithClientSecret;
+//import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithPassword;
+//import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.loginWithRefreshToken;
 
 /**
  * A login callback handler class for use with the KafkaProducer, KafkaConsumer, KafkaAdmin clients.
@@ -54,26 +54,26 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
     private ClientConfig config = new ClientConfig();
 
     private String token;
-    private String refreshToken;
-    private String clientId;
-    private String clientSecret;
-    private String username;
-    private String password;
-    private String scope;
-    private String audience;
+    private String refreshToken = null;
+    private String clientId = null;
+    private String clientSecret = null;
+    private String username = null;
+    private String password = null;
+    private String scope = null;
+    private String audience = null;
     private URI tokenEndpoint;
 
     private boolean isJwt;
     private int maxTokenExpirySeconds;
     private PrincipalExtractor principalExtractor;
 
-    private SSLSocketFactory socketFactory;
-    private HostnameVerifier hostnameVerifier;
+    //private SSLSocketFactory socketFactory;
+    //private HostnameVerifier hostnameVerifier;
 
-    private int connectTimeout;
-    private int readTimeout;
-    private int retries;
-    private long retryPauseMillis;
+    //private int connectTimeout;
+    //private int readTimeout;
+    //private int retries;
+    //private long retryPauseMillis;
 
     private boolean enableMetrics;
     private OAuthMetrics metrics;
@@ -109,22 +109,22 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
             }
         }
 
-        refreshToken = config.getValue(ClientConfig.OAUTH_REFRESH_TOKEN);
+        //refreshToken = config.getValue(ClientConfig.OAUTH_REFRESH_TOKEN);
 
-        clientId = config.getValue(Config.OAUTH_CLIENT_ID);
-        clientSecret = config.getValue(Config.OAUTH_CLIENT_SECRET);
-        username = config.getValue(ClientConfig.OAUTH_PASSWORD_GRANT_USERNAME);
-        password = config.getValue(ClientConfig.OAUTH_PASSWORD_GRANT_PASSWORD);
+        //clientId = config.getValue(Config.OAUTH_CLIENT_ID);
+        //clientSecret = config.getValue(Config.OAUTH_CLIENT_SECRET);
+        //username = config.getValue(ClientConfig.OAUTH_PASSWORD_GRANT_USERNAME);
+        //password = config.getValue(ClientConfig.OAUTH_PASSWORD_GRANT_PASSWORD);
 
-        scope = config.getValue(Config.OAUTH_SCOPE);
-        audience = config.getValue(Config.OAUTH_AUDIENCE);
-        socketFactory = ConfigUtil.createSSLFactory(config);
-        hostnameVerifier = ConfigUtil.createHostnameVerifier(config);
-        connectTimeout = getConnectTimeout(config);
-        readTimeout = getReadTimeout(config);
-        retries = getHttpRetries(config);
-        retryPauseMillis = getHttpRetryPauseMillis(config, retries);
-        checkConfiguration();
+        //scope = config.getValue(Config.OAUTH_SCOPE);
+        //audience = config.getValue(Config.OAUTH_AUDIENCE);
+        //socketFactory = ConfigUtil.createSSLFactory(config);
+        //hostnameVerifier = ConfigUtil.createHostnameVerifier(config);
+        //connectTimeout = getConnectTimeout(config);
+        //readTimeout = getReadTimeout(config);
+        //retries = getHttpRetries(config);
+        //retryPauseMillis = getHttpRetryPauseMillis(config, retries);
+        //checkConfiguration();
 
         principalExtractor = new PrincipalExtractor(
                 config.getValue(Config.OAUTH_USERNAME_CLAIM),
@@ -144,6 +144,7 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
 
         String configId = configureMetrics(configs);
 
+        /*
         if (LOG.isDebugEnabled()) {
             LOG.debug("Configured JaasClientOauthLoginCallbackHandler:"
                     + "\n    configId: " + configId
@@ -165,8 +166,28 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
                     + "\n    retryPauseMillis: " + retryPauseMillis
                     + "\n    enableMetrics: " + enableMetrics);
         }
+        */
+        
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Configured JaasClientOauthLoginCallbackHandler:"
+                    + "\n    configId: " + configId
+                    + "\n    token: " + mask(token)
+                    + "\n    refreshToken: " + mask(refreshToken)
+                    + "\n    tokenEndpointUri: " + tokenEndpoint
+                    + "\n    clientId: " + clientId
+                    + "\n    clientSecret: " + mask(clientSecret)
+                    + "\n    username: " + username
+                    + "\n    password: " + mask(password)
+                    + "\n    scope: " + scope
+                    + "\n    audience: " + audience
+                    + "\n    isJwt: " + isJwt
+                    + "\n    maxTokenExpirySeconds: " + maxTokenExpirySeconds
+                    + "\n    principalExtractor: " + principalExtractor
+                    + "\n    enableMetrics: " + enableMetrics);
+        }
     }
 
+    /*
     private int getHttpRetries(ClientConfig config) {
         int retries = config.getValueAsInt(Config.OAUTH_HTTP_RETRIES, 0);
         if (retries < 0) {
@@ -188,6 +209,7 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
         }
         return retryPauseMillis;
     }
+
 
     private void checkConfiguration() {
         if (token != null) {
@@ -227,6 +249,7 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
             }
         }
     }
+    */
 
     private String configureMetrics(Map<String, ?> configs) {
         String configId = config.getValue(Config.OAUTH_CONFIG_ID, "client");
@@ -269,8 +292,15 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
 
         long requestStartTime = System.currentTimeMillis();
         try {
-            if (token != null) {
+
+            if (token == null) {
                 // we could check if it's a JWT - in that case we could check if it's expired
+                LOG.warn("Access token is not speicified");
+            } 
+            result = loginWithAccessToken(token, isJwt, principalExtractor);
+            
+            /*
+            if (token != null) {
                 result = loginWithAccessToken(token, isJwt, principalExtractor);
             } else if (refreshToken != null) {
                 result = loginWithRefreshToken(tokenEndpoint, socketFactory, hostnameVerifier, refreshToken, clientId, clientSecret, isJwt, principalExtractor, scope, audience, connectTimeout, readTimeout, authenticatorMetrics, retries, retryPauseMillis);
@@ -281,6 +311,7 @@ public class JaasClientOauthLoginCallbackHandler implements AuthenticateCallback
             } else {
                 throw new IllegalStateException("Invalid oauth client configuration - no credentials");
             }
+            */
 
             addSuccessTime(requestStartTime);
         } catch (Throwable t) {

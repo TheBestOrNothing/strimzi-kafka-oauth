@@ -7,25 +7,25 @@ package io.strimzi.kafka.oauth.server;
 import com.nimbusds.jose.JWSObject;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.strimzi.kafka.oauth.common.Config;
-import io.strimzi.kafka.oauth.common.ConfigException;
-import io.strimzi.kafka.oauth.common.ConfigUtil;
+//import io.strimzi.kafka.oauth.common.Config;
+//import io.strimzi.kafka.oauth.common.ConfigException;
+//import io.strimzi.kafka.oauth.common.ConfigUtil;
 import io.strimzi.kafka.oauth.common.BearerTokenWithPayload;
 import io.strimzi.kafka.oauth.common.IOUtil;
 import io.strimzi.kafka.oauth.common.PrincipalExtractor;
 import io.strimzi.kafka.oauth.common.TimeUtil;
 import io.strimzi.kafka.oauth.common.NimbusPayloadTransformer;
 import io.strimzi.kafka.oauth.jsonpath.JsonPathFilterQuery;
-import io.strimzi.kafka.oauth.metrics.IntrospectValidationSensorKeyProducer;
-import io.strimzi.kafka.oauth.metrics.JwksValidationSensorKeyProducer;
+//import io.strimzi.kafka.oauth.metrics.IntrospectValidationSensorKeyProducer;
+//import io.strimzi.kafka.oauth.metrics.JwksValidationSensorKeyProducer;
 import io.strimzi.kafka.oauth.metrics.SensorKeyProducer;
-import io.strimzi.kafka.oauth.services.ConfigurationKey;
+//import io.strimzi.kafka.oauth.services.ConfigurationKey;
 import io.strimzi.kafka.oauth.services.OAuthMetrics;
-import io.strimzi.kafka.oauth.services.Services;
-import io.strimzi.kafka.oauth.services.ValidatorKey;
-import io.strimzi.kafka.oauth.validator.JWTSignatureValidator;
+//import io.strimzi.kafka.oauth.services.Services;
+//import io.strimzi.kafka.oauth.services.ValidatorKey;
+//import io.strimzi.kafka.oauth.validator.JWTSignatureValidator;
 import io.strimzi.kafka.oauth.common.TokenInfo;
-import io.strimzi.kafka.oauth.validator.OAuthIntrospectionValidator;
+//import io.strimzi.kafka.oauth.validator.OAuthIntrospectionValidator;
 import io.strimzi.kafka.oauth.validator.TokenValidator;
 import io.strimzi.kafka.oauth.validator.TokenValidationException;
 import org.apache.kafka.common.errors.SaslAuthenticationException;
@@ -40,17 +40,17 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.AppConfigurationEntry;
-import java.net.URI;
+//import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
+//import java.util.Properties;
 import java.util.Set;
-import java.util.function.Supplier;
+//import java.util.function.Supplier;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 
-import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
+//import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
 import static io.strimzi.kafka.oauth.common.TokenIntrospection.introspectAccessToken;
@@ -235,332 +235,6 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
 
         if (!OAuthBearerLoginModule.OAUTHBEARER_MECHANISM.equals(saslMechanism)) {
             throw new IllegalArgumentException(String.format("Unexpected SASL mechanism: %s", saslMechanism));
-        }
-
-        delegatedConfigure(configs, saslMechanism, jaasConfigEntries);
-    }
-
-    /**
-     * Part of configuration that can be directly invoked by an overriding class.
-     * Parameters are the same as for {@link #configure(Map, String, List)}
-     *
-     * @param configs Map of config properties
-     * @param saslMechanism The mechanism used by the connection
-     * @param jaasConfigEntries JAAS config parameters
-     */
-    public void delegatedConfigure(Map<String, ?> configs, String saslMechanism, List<AppConfigurationEntry> jaasConfigEntries) {
-
-        parseJaasConfig(jaasConfigEntries);
-
-        isJwt = isAccessTokenJwt(config, log, "OAuth validator configuration error: ");
-
-        validateConfig();
-
-        socketFactory = ConfigUtil.createSSLFactory(config);
-        verifier = ConfigUtil.createHostnameVerifier(config);
-
-        String jwksUri = config.getValue(ServerConfig.OAUTH_JWKS_ENDPOINT_URI);
-        String validIssuerUri = config.getValue(ServerConfig.OAUTH_VALID_ISSUER_URI);
-
-        validateIssuerUri(validIssuerUri);
-
-        checkDeprecatedConfig();
-
-        boolean checkTokenType = isCheckAccessTokenType(config);
-        boolean checkAudience = config.getValueAsBoolean(ServerConfig.OAUTH_CHECK_AUDIENCE, false);
-
-        String usernameClaim = config.getValue(Config.OAUTH_USERNAME_CLAIM);
-        String fallbackUsernameClaim = config.getValue(Config.OAUTH_FALLBACK_USERNAME_CLAIM);
-        String fallbackUsernamePrefix = config.getValue(Config.OAUTH_FALLBACK_USERNAME_PREFIX);
-
-        validateFallbackUsernameParameters(usernameClaim, fallbackUsernameClaim, fallbackUsernamePrefix);
-
-        principalExtractor = new PrincipalExtractor(usernameClaim, fallbackUsernameClaim, fallbackUsernamePrefix);
-
-        String clientId = config.getValue(Config.OAUTH_CLIENT_ID);
-        String clientSecret = config.getValue(Config.OAUTH_CLIENT_SECRET);
-
-        if (checkAudience && clientId == null) {
-            throw new ConfigException("OAuth validator configuration error: '" + Config.OAUTH_CLIENT_ID + "' must be set when '"
-                    + ServerConfig.OAUTH_CHECK_AUDIENCE + "' is 'true'");
-        }
-        String audience = checkAudience ? clientId : null;
-        String customClaimCheck = config.getValue(ServerConfig.OAUTH_CUSTOM_CLAIM_CHECK);
-        String groupQuery = config.getValue(ServerConfig.OAUTH_GROUPS_CLAIM);
-        String groupDelimiter = config.getValue(ServerConfig.OAUTH_GROUPS_CLAIM_DELIMITER);
-
-        String sslTruststore = config.getValue(Config.OAUTH_SSL_TRUSTSTORE_LOCATION);
-        String sslPassword = config.getValue(Config.OAUTH_SSL_TRUSTSTORE_PASSWORD);
-        String sslType = config.getValue(Config.OAUTH_SSL_TRUSTSTORE_TYPE);
-        String sslRnd = config.getValue(Config.OAUTH_SSL_SECURE_RANDOM_IMPLEMENTATION);
-
-        connectTimeout = ConfigUtil.getConnectTimeout(config);
-        readTimeout = ConfigUtil.getReadTimeout(config);
-
-        configureHttpRetries(config);
-
-        String configId = config.getValue(Config.OAUTH_CONFIG_ID);
-
-        configureMetrics(configs);
-
-        if (jwksUri != null) {
-            String effectiveConfigId = setupJWKSValidator(configId, jwksUri, validIssuerUri, checkTokenType,
-                    usernameClaim, fallbackUsernameClaim, fallbackUsernamePrefix,
-                    groupQuery, groupDelimiter, audience, customClaimCheck,
-                    sslTruststore, sslPassword, sslType, sslRnd);
-
-            URI jwksEndpointUri = config.getValueAsURI(ServerConfig.OAUTH_JWKS_ENDPOINT_URI);
-            validationSensorKeyProducer = new JwksValidationSensorKeyProducer(effectiveConfigId, saslMechanism, jwksEndpointUri);
-        } else {
-            String effectiveConfigId = setupIntrospectionValidator(configId, validIssuerUri, usernameClaim, fallbackUsernameClaim, fallbackUsernamePrefix,
-                    groupQuery, groupDelimiter, clientId, clientSecret, audience, customClaimCheck,
-                    sslTruststore, sslPassword, sslType, sslRnd);
-
-            URI introspectionUri = config.getValueAsURI(ServerConfig.OAUTH_INTROSPECTION_ENDPOINT_URI);
-            validationSensorKeyProducer = new IntrospectValidationSensorKeyProducer(effectiveConfigId, saslMechanism, introspectionUri);
-        }
-    }
-
-    private void configureMetrics(Map<String, ?> configs) {
-        if (!Services.isAvailable()) {
-            Services.configure(configs);
-        }
-
-        enableMetrics = config.getValueAsBoolean(Config.OAUTH_ENABLE_METRICS, false);
-        if (enableMetrics) {
-            metrics = Services.getInstance().getMetrics();
-        }
-    }
-
-    @SuppressWarnings("checkstyle:ParameterNumber")
-    private String setupIntrospectionValidator(String configId, String validIssuerUri, String usernameClaim, String fallbackUsernameClaim, String fallbackUsernamePrefix,
-                                             String groupQuery, String groupDelimiter, String clientId, String clientSecret, String audience, String customClaimCheck,
-                                             String sslTruststore, String sslPassword, String sslType, String sslRnd) {
-
-        String introspectionEndpoint = config.getValue(ServerConfig.OAUTH_INTROSPECTION_ENDPOINT_URI);
-        String userInfoEndpoint = config.getValue(ServerConfig.OAUTH_USERINFO_ENDPOINT_URI);
-        String validTokenType = config.getValue(ServerConfig.OAUTH_VALID_TOKEN_TYPE);
-
-        ValidatorKey vkey = new ValidatorKey.IntrospectionValidatorKey(
-                validIssuerUri,
-                audience,
-                customClaimCheck,
-                usernameClaim,
-                fallbackUsernameClaim,
-                fallbackUsernamePrefix,
-                groupQuery,
-                groupDelimiter,
-                sslTruststore,
-                sslPassword,
-                sslType,
-                sslRnd,
-                verifier != null,
-                introspectionEndpoint,
-                userInfoEndpoint,
-                validTokenType,
-                clientId,
-                clientSecret,
-                connectTimeout,
-                readTimeout,
-                enableMetrics,
-                retries,
-                retryPauseMillis);
-
-        String effectiveConfigId = configId != null ? configId : vkey.getConfigIdHash();
-
-        Supplier<TokenValidator> factory = () -> new OAuthIntrospectionValidator(
-                effectiveConfigId,
-                introspectionEndpoint,
-                socketFactory,
-                verifier,
-                principalExtractor,
-                groupQuery,
-                groupDelimiter,
-                validIssuerUri,
-                userInfoEndpoint,
-                validTokenType,
-                clientId,
-                clientSecret,
-                audience,
-                customClaimCheck,
-                connectTimeout,
-                readTimeout,
-                enableMetrics,
-                retries,
-                retryPauseMillis);
-
-        ConfigurationKey confKey = configId != null ? new ConfigurationKey(configId, vkey) : new ConfigurationKey(vkey.getConfigIdHash(), vkey);
-        validator = Services.getInstance().getValidators().get(confKey, factory);
-
-        return effectiveConfigId;
-    }
-
-    @SuppressWarnings("checkstyle:ParameterNumber")
-    private String setupJWKSValidator(String configId, String jwksUri, String validIssuerUri, boolean checkTokenType,
-                                    String usernameClaim, String fallbackUsernameClaim, String fallbackUsernamePrefix,
-                                    String groupQuery, String groupDelimiter, String audience, String customClaimCheck,
-                                    String sslTruststore, String sslPassword, String sslType, String sslRnd) {
-
-        int jwksRefreshSeconds = config.getValueAsInt(ServerConfig.OAUTH_JWKS_REFRESH_SECONDS, 300);
-        int jwksExpirySeconds = config.getValueAsInt(ServerConfig.OAUTH_JWKS_EXPIRY_SECONDS, 360);
-        int jwksMinPauseSeconds = config.getValueAsInt(ServerConfig.OAUTH_JWKS_REFRESH_MIN_PAUSE_SECONDS, 1);
-        boolean failFast = config.getValueAsBoolean(ServerConfig.OAUTH_FAIL_FAST, true);
-        boolean jwksIgnoreKeyUse = config.getValueAsBoolean(ServerConfig.OAUTH_JWKS_IGNORE_KEY_USE, false);
-
-        ValidatorKey vkey = new ValidatorKey.JwtValidatorKey(
-                validIssuerUri,
-                audience,
-                customClaimCheck,
-                usernameClaim,
-                fallbackUsernameClaim,
-                fallbackUsernamePrefix,
-                groupQuery,
-                groupDelimiter,
-                sslTruststore,
-                sslPassword,
-                sslType,
-                sslRnd,
-                verifier != null,
-                jwksUri,
-                jwksRefreshSeconds,
-                jwksExpirySeconds,
-                jwksMinPauseSeconds,
-                jwksIgnoreKeyUse,
-                checkTokenType,
-                connectTimeout,
-                readTimeout,
-                enableMetrics,
-                failFast
-        );
-
-        String effectiveConfigId = configId != null ? configId : vkey.getConfigIdHash();
-
-        Supplier<TokenValidator> factory = () -> new JWTSignatureValidator(
-                effectiveConfigId,
-                jwksUri,
-                socketFactory,
-                verifier,
-                principalExtractor,
-                groupQuery,
-                groupDelimiter,
-                validIssuerUri,
-                jwksRefreshSeconds,
-                jwksMinPauseSeconds,
-                jwksExpirySeconds,
-                jwksIgnoreKeyUse,
-                checkTokenType,
-                audience,
-                customClaimCheck,
-                connectTimeout,
-                readTimeout,
-                enableMetrics,
-                failFast);
-
-        ConfigurationKey confKey = configId != null ? new ConfigurationKey(configId, vkey) : new ConfigurationKey(vkey.getConfigIdHash(), vkey);
-        validator = Services.getInstance().getValidators().get(confKey, factory);
-
-        return effectiveConfigId;
-    }
-
-    private void checkDeprecatedConfig() {
-        if (config.getValue("oauth.crypto.provider.bouncycastle") != null) {
-            log.warn("The 'oauth.crypto.provider.bouncycastle' option has been deprecated. ECDSA is automatically available without the need for BouncyCastle JCE provider.");
-        }
-        if (config.getValue("oauth.crypto.provider.bouncycastle.position") != null) {
-            log.warn("The 'oauth.crypto.provider.bouncycastle.position' option has been deprecated. ECDSA is automatically available without the need for BouncyCastle JCE provider.");
-        }
-    }
-
-    /**
-     * Parse the JAAS config into ServerConfig
-     *
-     * @param jaasConfigEntries JAAS config parameters
-     * @return ServerConfig instance
-     */
-    protected ServerConfig parseJaasConfig(List<AppConfigurationEntry> jaasConfigEntries) {
-        if (config != null) {
-            return config;
-        }
-        if (jaasConfigEntries.size() != 1) {
-            throw new IllegalArgumentException("Exactly one jaasConfigEntry expected (size: " + jaasConfigEntries.size());
-        }
-
-        AppConfigurationEntry e = jaasConfigEntries.get(0);
-        Properties p = new Properties();
-        p.putAll(e.getOptions());
-        config = new ServerConfig(p);
-        return config;
-    }
-
-    @SuppressWarnings("deprecation")
-    private static boolean isCheckAccessTokenType(Config config) {
-        String legacy = config.getValue(ServerConfig.OAUTH_VALIDATION_SKIP_TYPE_CHECK);
-        if (legacy != null) {
-            log.warn("Config option '{}' is deprecated. Use '{}' (with reverse meaning) instead.",
-                    ServerConfig.OAUTH_VALIDATION_SKIP_TYPE_CHECK, ServerConfig.OAUTH_CHECK_ACCESS_TOKEN_TYPE);
-            if (config.getValue(ServerConfig.OAUTH_CHECK_ACCESS_TOKEN_TYPE) != null) {
-                throw new ConfigException("OAuth validator configuration error: can't use both '" + ServerConfig.OAUTH_CHECK_ACCESS_TOKEN_TYPE
-                        + "' and '" + ServerConfig.OAUTH_VALIDATION_SKIP_TYPE_CHECK + "'");
-            }
-        }
-        return legacy != null ? !Config.isTrue(legacy) :
-                config.getValueAsBoolean(ServerConfig.OAUTH_CHECK_ACCESS_TOKEN_TYPE, true);
-    }
-
-    private void validateConfig() {
-        String jwksUri = config.getValue(ServerConfig.OAUTH_JWKS_ENDPOINT_URI);
-        String introspectUri = config.getValue(ServerConfig.OAUTH_INTROSPECTION_ENDPOINT_URI);
-
-        if ((jwksUri == null) && (introspectUri == null)) {
-            throw new ConfigException("OAuth validator configuration error: either '" + ServerConfig.OAUTH_JWKS_ENDPOINT_URI
-                    + "' (for fast local signature validation) or '" + ServerConfig.OAUTH_INTROSPECTION_ENDPOINT_URI
-                    + "' (for using authorization server during validation) should be specified!");
-        } else if ((jwksUri != null) && (introspectUri != null)) {
-            throw new ConfigException("OAuth validator configuration error: only one of '" + ServerConfig.OAUTH_JWKS_ENDPOINT_URI
-                    + "' (for fast local signature validation) and '" + ServerConfig.OAUTH_INTROSPECTION_ENDPOINT_URI
-                    + "' (for using authorization server during validation) can be specified!");
-        }
-
-        if (jwksUri != null && !isJwt) {
-            throw new ConfigException("OAuth validator configuration error: '" + ServerConfig.OAUTH_JWKS_ENDPOINT_URI
-                    + "' (for fast local signature validation) is not compatible with '" + ServerConfig.OAUTH_ACCESS_TOKEN_IS_JWT + "' set to 'false'");
-        }
-    }
-
-    private void validateIssuerUri(String validIssuerUri) {
-        if (validIssuerUri == null && config.getValueAsBoolean(ServerConfig.OAUTH_CHECK_ISSUER, true)) {
-            throw new ConfigException("OAuth validator configuration error: '" + ServerConfig.OAUTH_VALID_ISSUER_URI
-                    + "' must be set or '" + ServerConfig.OAUTH_CHECK_ISSUER + "' has to be set to 'false'");
-        }
-    }
-
-    private void validateFallbackUsernameParameters(String usernameClaim, String fallbackUsernameClaim, String fallbackUsernamePrefix) {
-        if (fallbackUsernameClaim != null && usernameClaim == null) {
-            throw new ConfigException("OAuth validator configuration error: '" + ServerConfig.OAUTH_USERNAME_CLAIM
-                    + "' must be set when '" + ServerConfig.OAUTH_FALLBACK_USERNAME_CLAIM + "' is set");
-        }
-
-        if (fallbackUsernamePrefix != null && fallbackUsernameClaim == null) {
-            throw new ConfigException("OAuth validator configuration error: '" + ServerConfig.OAUTH_FALLBACK_USERNAME_CLAIM
-                    + "' must be set when '" + ServerConfig.OAUTH_FALLBACK_USERNAME_PREFIX + "' is set");
-        }
-    }
-
-    private void configureHttpRetries(ServerConfig config) {
-        retries = config.getValueAsInt(Config.OAUTH_HTTP_RETRIES, 0);
-        if (retries < 0) {
-            throw new ConfigException("The configured value of 'oauth.http.retries' has to be greater or equal to zero");
-        }
-
-        retryPauseMillis = config.getValueAsLong(Config.OAUTH_HTTP_RETRY_PAUSE_MILLIS, 0);
-        if (retries > 0) {
-            if (retryPauseMillis < 0) {
-                retryPauseMillis = 0;
-                log.warn("The configured value of 'oauth.http.retry.pause.millis' is less than zero and will be ignored");
-            }
-            if (retryPauseMillis <= 0) {
-                log.warn("No pause between http retries configured. Consider setting 'oauth.http.retry.pause.millis' to greater than zero to avoid flooding the authorization server with requests.");
-            }
         }
     }
 
