@@ -48,6 +48,7 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 import java.security.MessageDigest;
@@ -209,6 +210,8 @@ public class Secp256k1Producer {
     }
 
     private static void ecdh() {
+
+        // Step 1: Generate shared secret key
         // Generate key pairs for Alice and Bob
         AsymmetricCipherKeyPair aliceKeyPair = generateKeyPair();
         AsymmetricCipherKeyPair bobKeyPair = generateKeyPair();
@@ -237,12 +240,24 @@ public class Secp256k1Producer {
         
         try {
             // Encrypt message with shared secret
+            // Step 2: Prepare the plaintext
             String message = "Hello, Bob!";
-            byte[] encryptedMessage = encrypt(message, sharedSecretAlice);
+
+            // Step 3: Choose encryption algorithm and mode
+            String algorithm = "AES";
+            String mode = "CBC";
+
+            // Step 4: Generate Initialization Vector (IV)
+            IvParameterSpec iv = generateIV();
+
+            // Step 5: Encrypt the data 
+            byte[] encryptedMessage = encrypt(message, sharedSecretAlice, algorithm, mode, iv);
             System.out.println("Encrypted message: " + Base64.getEncoder().encodeToString(encryptedMessage));
 
-            // Decrypt message with shared secret
-            String decryptedMessage = decrypt(encryptedMessage, sharedSecretBob);
+            // Step 6: Transmit ciphertext, IV, algorithm, and mode to Bob 
+
+            // Step 7：Decrypt message with shared secret
+            String decryptedMessage = decrypt(encryptedMessage, sharedSecretBob, algorithm, mode, iv);
             System.out.println("Decrypted message: " + decryptedMessage);
         } catch (java.lang.Exception e) {
 
@@ -267,17 +282,28 @@ public class Secp256k1Producer {
         return sharedSecret.toByteArray();
     }
 
-    private static byte[] encrypt(String message, byte[] sharedSecret) throws Exception {
+    // Generate a random IV
+    public static IvParameterSpec generateIV() {
+        byte[] iv = new byte[16]; // 16 bytes for AES
+        // Generate a random IV
+        // Note: In a real scenario, use a secure random generator for IV generation
+        //       For demonstration purposes, this uses a random fixed IV
+        //       Never reuse the same IV with the same key
+        //       IV should be securely transmitted or included with the ciphertext
+        return new IvParameterSpec(iv);
+    }
+
+    private static byte[] encrypt(String message, byte[] sharedSecret, String algorithm, String mode, IvParameterSpec iv) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm + "/" + mode + "/PKCS5Padding");
         SecretKeySpec secretKey = new SecretKeySpec(sharedSecret, "AES");
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
         return cipher.doFinal(message.getBytes());
     }
 
-    private static String decrypt(byte[] encryptedMessage, byte[] sharedSecret) throws Exception {
+    private static String decrypt(byte[] encryptedMessage, byte[] sharedSecret, String algorithm, String mode, IvParameterSpec iv) throws Exception {
+        Cipher cipher = Cipher.getInstance(algorithm + "/" + mode + "/PKCS5Padding");
         SecretKeySpec secretKey = new SecretKeySpec(sharedSecret, "AES");
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
         byte[] decryptedBytes = cipher.doFinal(encryptedMessage);
         return new String(decryptedBytes);
     }
