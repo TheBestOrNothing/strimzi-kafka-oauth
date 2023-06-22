@@ -93,8 +93,8 @@ public class SECP256K1 {
             builder.claim("iv", Base64.getEncoder().encodeToString(iv.getIV()));
             String encryptedMessage = encryptedMessage(message, algorithm, mode, iv, aliceJWK, bobJWK);
             builder.claim("encryptedMessage", encryptedMessage);
-            byte[] encryptedMessageBytes = Base64.getDecoder().decode(encryptedMessage);
-            String decryptedMessageBase64 = decryptedMessage(encryptedMessageBytes, algorithm, mode, iv, bobJWK, aliceJWK);
+            //byte[] encryptedMessageBytes = Base64.getDecoder().decode(encryptedMessage);
+            //String decryptedMessageBase64 = decryptedMessage(encryptedMessageBytes, algorithm, mode, iv, bobJWK, aliceJWK);
             //builder.claim("decryptedMessage", new String(Base64.getDecoder().decode(decryptedMessageBase64)));
             JWTClaimsSet claimsSet = builder.build();
             
