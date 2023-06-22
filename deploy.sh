@@ -6,6 +6,7 @@ mvn clean install -DskipTests
 # install libs
 mkdir kafka
 mkdir kafka/authLibs
+mkdir kafka/config
 # Copy files to the destination directory
 cp ./oauth-server/target/kafka-oauth-server-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
 cp ./oauth-client/target/kafka-oauth-client-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
@@ -16,7 +17,7 @@ cp ./oauth-common/target/lib/nimbus-jose-jwt-9.10.jar ./kafka/authLibs
 # install kafak and config
 # curl -o ./kafka/kafka.tgz https://downloads.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz
 file_path="./kafka/kafka.tgz"
-url="https://downloads.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz"
+url="https://downloads.apache.org/kafka/3.4.1/kafka_2.12-3.4.1.tgz"
 if [ ! -f "$file_path" ]; then
     curl -o "$file_path" "$url"
 else

@@ -59,6 +59,7 @@ Strimzi Kafka OAuth modules provide support for OAuth2 as authentication mechani
   - [Some examples of PromQL queries](#some-examples-of-promql-queries)
 - [Demo](#demo)
 - [QuickStart](#quickstart)
+- [Github](#github)
   
 <!-- /TOC -->
 
@@ -1415,12 +1416,25 @@ QuickStart
 
 - Start producer in example/producer dir:
 ```
-    java -cp target/*:target/lib/* io.strimzi.examples.producer.WhispeerProducer
+    java -cp target/*:target/lib/* io.strimzi.examples.producer.Ecp256k1Producer
 ```
 
 - Start consumer in example/consumer dir:
 ```
-    java -cp target/*:target/lib/* io.strimzi.examples.consumer.WhispeerConsumer
+    java -cp target/*:target/lib/* io.strimzi.examples.consumer.Ecp256k1Consumer
+```
+
+
+Github
+----
+
+- How to commit the change to github repository:
+```
+    git status
+    git add filename - add dedicated file
+    git diff filename - to review the change
+    git commit -m "commit info"
+    git push origin main
 ```
 
 
