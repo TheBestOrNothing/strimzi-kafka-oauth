@@ -10,7 +10,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
+//import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
@@ -43,7 +43,7 @@ public class KafkaAdminToken {
         try {
             // Parse token string into a SignedJWT object
             SignedJWT signedJWT = SignedJWT.parse(token);
-            System.out.println(signedJWT.getHeader().toJSONObject());
+//            System.out.println(signedJWT.getHeader().toJSONObject());
             JWSHeader header = signedJWT.getHeader();
             
             //Create resource_access add to the jwt
@@ -78,16 +78,16 @@ public class KafkaAdminToken {
 
             // Output the JWT
             token = jwt.serialize();
-            System.out.println("keyID:");
-            System.out.println(ecJWK.getKeyID());
-            System.out.println("Token:");
+//            System.out.println("keyID:");
+//            System.out.println(ecJWK.getKeyID());
+//            System.out.println("Token:");
             System.out.println(token);
 
             // Verify the ES256K signature with the public EC key
-            System.out.println(jwt.verify(new ECDSAVerifier(ecPublicJWK)));
-            System.out.println(jwt.getHeader().getKeyID());
-            System.out.println(jwt.getHeader().toJSONObject());
-            System.out.println(jwt.getJWTClaimsSet().toJSONObject());
+//            System.out.println(jwt.verify(new ECDSAVerifier(ecPublicJWK)));
+//            System.out.println(jwt.getHeader().getKeyID());
+//            System.out.println(jwt.getHeader().toJSONObject());
+//            System.out.println(jwt.getJWTClaimsSet().toJSONObject());
 
         } catch (JOSEException | ParseException e) {
             System.out.println("Exception Occure");

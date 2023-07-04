@@ -86,20 +86,60 @@ public class WEB3 {
     //There are many types of publickey in this, compressed, uncompressed, hybird
     //All these types can be decode by curve.decodePoint function
     //prefix without '0x04' from uncompressed public key
-    public WEB3(BigInteger publicKey) {
-        this.publicKey = publicKey;
-        this.address = Keys.getAddress(this.publicKey);
+//    public WEB3(BigInteger publicKey) {
+//        this.publicKey = publicKey;
+//        this.address = Keys.getAddress(this.publicKey);
+//        ECDomainParameters curv = new ECDomainParameters(CustomNamedCurves.getByName("secp256k1"));
+//        X9IntegerConverter x9 = new X9IntegerConverter();
+//        byte[] compEnc = x9.integerToBytes(publicKey, 1 + x9.getByteLength(curv.getCurve()) * 2);
+//        compEnc[0] = 0x04;
+//        this.point = curv.getCurve().decodePoint(compEnc);
+//        byte[] x = point.normalize().getXCoord().getEncoded();
+//        byte[] y = point.normalize().getYCoord().getEncoded();
+//        //this.address = Keys.getAddress(this.ecKeyPair.getPublicKey());
+//        this.nimbusdsJWK = new ECKey.Builder(Curve.SECP256K1, Base64URL.encode(x), Base64URL.encode(y)).build();
+//        this.ecPrivateKey = null;
+//        this.web3KeyPair = null;
+//    }
+
+    //There are many types of publickey in this, compressed, uncompressed, hybird
+    //All these types can be decode by curve.decodePoint function
+    //prefix without '0x04' from uncompressed public key
+    public static WEB3 publicWEB3(BigInteger publicKey) {
+        WEB3 web3 = new WEB3();
+        web3.ecPrivateKey = null;
+        web3.web3KeyPair = null;
+        web3.publicKey = publicKey;
+        web3.address = Keys.getAddress(web3.publicKey);
         ECDomainParameters curv = new ECDomainParameters(CustomNamedCurves.getByName("secp256k1"));
         X9IntegerConverter x9 = new X9IntegerConverter();
-        byte[] compEnc = x9.integerToBytes(publicKey, 1 + x9.getByteLength(curv.getCurve()) * 2);
+        byte[] compEnc = x9.integerToBytes(web3.publicKey, 1 + x9.getByteLength(curv.getCurve()) * 2);
         compEnc[0] = 0x04;
-        this.point = curv.getCurve().decodePoint(compEnc);
-        byte[] x = point.normalize().getXCoord().getEncoded();
-        byte[] y = point.normalize().getYCoord().getEncoded();
+        web3.point = curv.getCurve().decodePoint(compEnc);
+        byte[] x = web3.point.normalize().getXCoord().getEncoded();
+        byte[] y = web3.point.normalize().getYCoord().getEncoded();
         //this.address = Keys.getAddress(this.ecKeyPair.getPublicKey());
-        this.nimbusdsJWK = new ECKey.Builder(Curve.SECP256K1, Base64URL.encode(x), Base64URL.encode(y)).build();
-        this.ecPrivateKey = null;
-        this.web3KeyPair = null;
+        web3.nimbusdsJWK = new ECKey.Builder(Curve.SECP256K1, Base64URL.encode(x), Base64URL.encode(y)).build();
+        return web3;
+    }
+
+    public WEB3(BigInteger privateKey) {
+        try {
+            this.point = Sign.publicPointFromPrivate(align2FieldSize(privateKey));
+            byte[] x = this.point.normalize().getXCoord().getEncoded();
+            byte[] y = this.point.normalize().getYCoord().getEncoded();
+            this.nimbusdsJWK = new ECKey.Builder(Curve.SECP256K1, Base64URL.encode(x), Base64URL.encode(y))
+                    .d(Base64URL.encode(align2FieldSize(privateKey)))
+                    .build();
+            KeyPair javaKeyPair = this.nimbusdsJWK.toKeyPair();
+            this.ecPrivateKey = (ECPrivateKey) javaKeyPair.getPrivate();
+            this.web3KeyPair = ECKeyPair.create(align2FieldSize(this.ecPrivateKey.getS())); 
+            this.publicKey = this.web3KeyPair.getPublicKey();
+            this.address = Keys.getAddress(align2FieldSize(this.publicKey));
+        } catch (JOSEException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     public void printWeb3() {
@@ -119,7 +159,6 @@ public class WEB3 {
         System.out.printf("address: %n%s%n", this.address);
     }
 
-
     private BigInteger align2FieldSize(BigInteger s) {
         ECDomainParameters curv = new ECDomainParameters(CustomNamedCurves.getByName("secp256k1"));
         X9IntegerConverter x9 = new X9IntegerConverter();
@@ -135,6 +174,18 @@ public class WEB3 {
         return b;
     }
 
+    private byte[] align2FieldSizeBytes(BigInteger s) {
+        ECDomainParameters curv = new ECDomainParameters(CustomNamedCurves.getByName("secp256k1"));
+        X9IntegerConverter x9 = new X9IntegerConverter();
+        int fieldSize = x9.getByteLength(curv.getCurve());
+        //System.out.printf("s.toByteArray().length: %n%d%n", s.toByteArray().length);
+        //System.out.printf("fieldSize: %n%d%n", fieldSize);
+        //System.out.printf("(length / fieldSize) * fieldSize: %n%d%n", (s.toByteArray().length / fieldSize) * fieldSize);
+        byte[] sBytes = x9.integerToBytes(s, (s.toByteArray().length / fieldSize) * fieldSize);
+        //System.out.printf("sBytes.length: %n%d%n", sBytes.length);
+        //BigInteger b = BigIntegers.fromUnsignedByteArray(sBytes);
+        return sBytes;
+    }
     public static void testWEB3() {
         System.out.println("WEB3 testing");
         WEB3 web1 = new WEB3();
@@ -143,7 +194,9 @@ public class WEB3 {
         web1.printWeb3();
         web1 = new WEB3(web1.nimbusdsJWK);
         web1.printWeb3();
-        web1 = new WEB3(web1.publicKey);
+        web1 = new WEB3(web1.ecPrivateKey.getS());
+        web1.printWeb3();
+        web1 = publicWEB3(web1.publicKey);
         web1.printWeb3();
     }
 
