@@ -90,6 +90,7 @@
 
     <modules>
         <module>kafka-oauth-strimzi</module>
+	<module>whispeer</module>
         <module>spring</module>
     </modules>
 </project>

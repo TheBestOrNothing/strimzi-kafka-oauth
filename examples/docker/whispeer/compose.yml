@@ -1,0 +1,60 @@
+version: '3.5'
+
+services:
+
+#################################### KAFKA BROKER ####################################
+  kafka:
+    image: kafka
+    build:
+      context: whispeer/kafka
+      dockerfile: Dockerfile
+#    restart: always
+    restart: on-failure
+    hostname: kafka
+    container_name: kafka
+    privileged: true
+    tty: true
+    stdin_open: true
+    ports:
+      - 9092:9092
+
+    environment:
+
+      LOG_DIR: /home/kafka/logs
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+ 
+
+    depends_on:
+      - zookeeper
+#    networks:
+#      kafka-own:
+#        ipv4_address: 192.168.3.21
+
+  zookeeper:
+    image: zookeeper
+    build:  
+      context: whispeer/kafka
+      dockerfile: Dockerfile
+    restart: on-failure
+    hostname: zookeeper
+    container_name: zookeeper
+    tty: true
+    stdin_open: true
+    ports:
+      - 2181:2181
+    environment:
+      LOG_DIR: /home/kafka/logs
+
+#    networks:
+#      kafka-own:
+#        ipv4_address: 192.168.3.11
+
+#networks:
+#  kafka-own:
+#    external:
+#      name: kafka-own
