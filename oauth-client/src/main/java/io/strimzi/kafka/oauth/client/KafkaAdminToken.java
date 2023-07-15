@@ -63,6 +63,11 @@ public class KafkaAdminToken {
             JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder(jwtClaimsSet);
             builder.expirationTime(newExpirationTime);
             builder.claim("gitcoins", resourceAccess);
+//            String publicKey = ecJWK.toPublicJWK().toString();
+//            String publicKey = ecJWK.toPublicJWK().toJSONString();
+//            ECKey publicJWK = ECKey.parse(publicKey);
+//            builder.claim("publicKey", publicKey);
+//            builder.issuer(publicKey);
             JWTClaimsSet newClaimsSet = builder.build();
             
             // Create JWT for ES256K alg
@@ -70,6 +75,7 @@ public class KafkaAdminToken {
                 new JWSHeader.Builder(JWSAlgorithm.ES256K)
                     .keyID(ecJWK.getKeyID())
                     .type(header.getType())
+                    .jwk(ecPublicJWK)
                     .build(),
                     newClaimsSet);
 
@@ -78,7 +84,7 @@ public class KafkaAdminToken {
 
             // Output the JWT
             token = jwt.serialize();
-//            System.out.println("keyID:");
+//            System.out.println(publicKey);
 //            System.out.println(ecJWK.getKeyID());
 //            System.out.println("Token:");
             System.out.println(token);

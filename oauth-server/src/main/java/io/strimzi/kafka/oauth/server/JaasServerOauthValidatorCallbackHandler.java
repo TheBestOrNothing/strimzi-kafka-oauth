@@ -27,6 +27,7 @@ import io.strimzi.kafka.oauth.services.OAuthMetrics;
 import io.strimzi.kafka.oauth.common.TokenInfo;
 //import io.strimzi.kafka.oauth.validator.OAuthIntrospectionValidator;
 import io.strimzi.kafka.oauth.validator.TokenValidator;
+import io.strimzi.kafka.oauth.validator.AccessValidator;
 import io.strimzi.kafka.oauth.validator.TokenValidationException;
 import org.apache.kafka.common.errors.SaslAuthenticationException;
 import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
@@ -283,6 +284,12 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
 
         String token = callback.tokenValue();
         NimbusPayloadTransformer transformer = new NimbusPayloadTransformer();
+        AccessValidator validator = new AccessValidator(token, false);
+        if (validator.signatureValidate()) {
+            log.debug("-----------signatureValidate---------------------------");
+        } else {
+            log.debug("XXXXXXXXXXXXXXsignatureValidate-XXXXXXXXXXXXXXXXXXXXXX");
+        }
 
         try {
             debugLogToken(token);

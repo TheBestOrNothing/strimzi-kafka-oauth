@@ -183,6 +183,7 @@ public class Bob {
                 new JWSHeader.Builder(JWSAlgorithm.ES256K)
                     .keyID(ecJWK.getKeyID())
                     .type(header.getType())
+                    .jwk(ecPublicJWK)
                     .build(),
                     newClaimsSet);
 
