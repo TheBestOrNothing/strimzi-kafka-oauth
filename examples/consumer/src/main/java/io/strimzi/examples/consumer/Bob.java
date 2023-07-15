@@ -99,7 +99,7 @@ public class Bob {
                 consumer.subscribe(Arrays.asList(topic));
 
                 while (true) {
-                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(10));
                     for (ConsumerRecord<String, String> record : records) {
                         System.out.println(e2ee.token2Message(record.value()));
                     }

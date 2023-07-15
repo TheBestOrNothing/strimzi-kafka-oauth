@@ -11,6 +11,7 @@ import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -94,8 +95,8 @@ public class End2EndEncryption {
             Date newExpirationTime = new Date(System.currentTimeMillis() + 3600 * 1000); // 1 hour from now
             JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
             builder.expirationTime(newExpirationTime);
-            builder.claim("aliceJWK", aliceJWK.toPublicJWK().toString());
-            builder.claim("bobJWK", bobJWK.toJSONString());
+            //builder.claim("aliceJWK", aliceJWK.toPublicJWK().toString());
+            //builder.claim("bobJWK", bobJWK.toJSONString());
             //builder.claim("message", message);
             builder.claim("algorithm", algorithm);
             builder.claim("mode", mode);
@@ -111,8 +112,7 @@ public class End2EndEncryption {
             // Create JWT for ES256K alg
             SignedJWT jwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.ES256K)
-                    .keyID(aliceJWK.toJSONString())
-                    .type(null)
+                    .jwk(aliceJWK.toPublicJWK())
                     .build(),
                     claimsSet);
 
@@ -124,7 +124,7 @@ public class End2EndEncryption {
             //System.out.println(token);
 
             // Verify the ES256K signature with the public EC key
-            if (jwt.verify(new ECDSAVerifier(aliceJWK))) {
+            if (jwt.verify(new ECDSAVerifier(aliceJWK.toPublicJWK()))) {
                 System.out.println("message2Token ... ... ... ... ... ... ... ...");
                 System.out.println(jwt.getJWTClaimsSet().toJSONObject());
             }
@@ -140,32 +140,37 @@ public class End2EndEncryption {
         // Generate EC key pair on the secp256k1 curve
         try {
             SignedJWT jwt = SignedJWT.parse(token);
-            String ecPublicKeyStr = jwt.getHeader().getKeyID();
-            ECKey ecPublicJWK = ECKey.parse(ecPublicKeyStr);
-            
-            if (jwt.verify(new ECDSAVerifier(ecPublicJWK))) {
-                JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
-                System.out.println("token2Message ... ... ... ... ... ... ... ...");
-                System.out.println(claimsSet.toJSONObject());
-//                ECKey aliceJWK = ECKey.parse(claimsSet.getClaim("aliceJWK").toString());
-//                ECKey bobJWK = ECKey.parse(claimsSet.getClaim("bobJWK").toString());
-                String algorithm = claimsSet.getClaim("algorithm").toString();
-                String mode = claimsSet.getClaim("mode").toString();
-                String ivStr = claimsSet.getClaim("iv").toString();
-                byte[] ivBytes = Base64.getDecoder().decode(ivStr);
-                IvParameterSpec ivParam = new IvParameterSpec(ivBytes);
-
-                String encryptedMessageBase64 = claimsSet.getClaim("encryptedMessage").toString();
-                byte[] encryptedMessage = Base64.getDecoder().decode(encryptedMessageBase64);
-                String decryptedMessageBase64 = decryptedMessage(encryptedMessage, algorithm, mode, ivParam, aliceJWK, bobJWK);
-                message = new String(Base64.getDecoder().decode(decryptedMessageBase64));
-                //System.out.printf("The message is: %s%n", message);
-            } else {
-                System.out.printf("Verify failed%n");
+            JWK ecPublicJWK = jwt.getHeader().getJWK();
+            if (ecPublicJWK == null) {
+                System.out.println("There is no jwk in the header in token2message");
+                return null;
             }
 
+            if (ecPublicJWK instanceof ECKey) {
+                if (!jwt.verify(new ECDSAVerifier((ECKey) ecPublicJWK))) {
+                    System.out.println("Exception Occure when ECDSAVerifier in token2message");
+                    return null;
+                }
+            }
+
+            JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
+            System.out.println("token2Message ... ... ... ... ... ... ... ...");
+            System.out.println(claimsSet.toJSONObject());
+            //ECKey aliceJWK = ECKey.parse(claimsSet.getClaim("aliceJWK").toString());
+            //ECKey bobJWK = ECKey.parse(claimsSet.getClaim("bobJWK").toString());
+            String algorithm = claimsSet.getClaim("algorithm").toString();
+            String mode = claimsSet.getClaim("mode").toString();
+            String ivStr = claimsSet.getClaim("iv").toString();
+            byte[] ivBytes = Base64.getDecoder().decode(ivStr);
+            IvParameterSpec ivParam = new IvParameterSpec(ivBytes);
+
+            String encryptedMessageBase64 = claimsSet.getClaim("encryptedMessage").toString();
+            byte[] encryptedMessage = Base64.getDecoder().decode(encryptedMessageBase64);
+            String decryptedMessageBase64 = decryptedMessage(encryptedMessage, algorithm, mode, ivParam, aliceJWK, bobJWK);
+            message = new String(Base64.getDecoder().decode(decryptedMessageBase64));
+
         } catch (JOSEException | ParseException e) {
-            System.out.println("Exception Occure");
+            System.out.println("Exception Occure when token2message");
         }
 
         return message;
