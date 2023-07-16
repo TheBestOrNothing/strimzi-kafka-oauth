@@ -5,7 +5,7 @@
 package io.strimzi.kafka.oauth.server.authorizer;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.nimbusds.jose.JWSObject;
+//import com.nimbusds.jose.JWSObject;
 
 import io.strimzi.kafka.oauth.client.ClientConfig;
 import io.strimzi.kafka.oauth.common.BearerTokenWithPayload;
@@ -197,8 +197,6 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
     private SensorKeyProducer authzSensorKeyProducer;
     private SensorKeyProducer grantsSensorKeyProducer;
     private final Semaphores<JsonNode> semaphores = new Semaphores<>();
-    
-    private String keyID;
 
     /**
      * Create a new instance
@@ -227,7 +225,7 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
         }
 
         configureSuperUsers(configs);
-        keyID = (String) configs.get("authorizer.keyID");
+//        keyID = (String) configs.get("authorizer.keyID");
 
     }
 
@@ -339,40 +337,47 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
         JsonNode grants = null;
         long startTime = System.currentTimeMillis();
         List<AuthorizationResult> result;
-        //String superUser = "f407e3a6-0b4f-4c2c-a29c-fe4ee33124cc";
         
         log.debug("Authenticated principal for the connection: {}", requestContext.principal());
         log.debug("Action lists: {}", actions);
         try {
             KafkaPrincipal principal = requestContext.principal();
-            /*
-            if (principal.getName().equals(superUser)) {
-                return Collections.nCopies(actions.size(), AuthorizationResult.ALLOWED);
+
+            for (UserSpec u : superUsers) {
+                if (principal.getName().equals(u.getName())) {
+
+                    for (Action action: actions) {
+                        // It's a superuser. Superusers are granted everything
+                        if (GRANT_LOG.isDebugEnabled() && action.logIfAllowed()) {
+                            GRANT_LOG.debug("Authorization GRANTED - user is a superuser: " + requestContext.principal() +
+                                    ", user: " + u.getName() + ", operation: " + action.operation() + ", resource: " + fromResourcePattern(action.resourcePattern()));
+                        }
+                    }
+                    addAuthzMetricSuccessTime(startTime);
+                    return Collections.nCopies(actions.size(), AuthorizationResult.ALLOWED);
+                }
             }
 
-
-            if (!(principal instanceof OAuthKafkaPrincipal)) {
-                // If user wasn't authenticated over OAuth, and simple ACL delegation is enabled
-                // we delegate to simple ACL
-                result = delegateIfRequested(requestContext, actions, null);
-
-                addAuthzMetricSuccessTime(startTime);
-                return result;
-            }
-            */
-
+//            if (!(principal instanceof OAuthKafkaPrincipal)) {
+//                // If user wasn't authenticated over OAuth, and simple ACL delegation is enabled
+//                // we delegate to simple ACL
+//                result = delegateIfRequested(requestContext, actions, null);
+//
+//                addAuthzMetricSuccessTime(startTime);
+//                return result;
+//            }
 
             OAuthKafkaPrincipal jwtPrincipal = (OAuthKafkaPrincipal) principal;
 
             BearerTokenWithPayload token = jwtPrincipal.getJwt();
-            JWSObject jws = JWSObject.parse(token.value());
-            log.debug("token.keyID authorizer.keyID {}: {}", jws.getHeader().getKeyID(), keyID);
-            
-
-            if (jws.getHeader().getKeyID().equals(keyID)) {
-                log.debug("Authorization grants for who's key is eqaul to authorizer.keyID {}: {}", principal, actions);
-                return Collections.nCopies(actions.size(), AuthorizationResult.ALLOWED);
-            }
+//            JWSObject jws = JWSObject.parse(token.value());
+//            log.debug("token.keyID authorizer.keyID {}: {}", jws.getHeader().getKeyID(), keyID);
+//            
+//
+//            if (jws.getHeader().getKeyID().equals(keyID)) {
+//                log.debug("Authorization grants for who's key is eqaul to authorizer.keyID {}: {}", principal, actions);
+//                return Collections.nCopies(actions.size(), AuthorizationResult.ALLOWED);
+//            }
             
 
             if (denyIfTokenInvalid(token)) {

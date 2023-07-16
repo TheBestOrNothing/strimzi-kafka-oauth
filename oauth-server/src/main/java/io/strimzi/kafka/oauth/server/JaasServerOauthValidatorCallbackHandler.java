@@ -54,7 +54,7 @@ import java.io.ByteArrayInputStream;
 //import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
-import static io.strimzi.kafka.oauth.common.TokenIntrospection.introspectAccessToken;
+//import static io.strimzi.kafka.oauth.common.TokenIntrospection.introspectAccessToken;
 import static io.strimzi.kafka.oauth.common.JSONUtil.readJSON;
 
 
@@ -298,7 +298,8 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
             //callback.token(new BearerTokenWithPayloadImpl(ti));
 
             //Add following content to bypass validate token by Oauth2 server
-            TokenInfo ti = introspectAccessToken(token, principalExtractor);
+            //TokenInfo ti = introspectAccessToken(token, principalExtractor);
+            TokenInfo ti = new TokenInfo(validator.getPayload(), token, validator.getWeb3().address);
             BearerTokenWithPayload tokenWithPayload = new BearerTokenWithPayloadImpl(ti);
 
             //Payload means the resource to access 

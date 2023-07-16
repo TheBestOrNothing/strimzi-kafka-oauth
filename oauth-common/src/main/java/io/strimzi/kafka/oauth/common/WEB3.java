@@ -7,6 +7,7 @@ package io.strimzi.kafka.oauth.common;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.util.Base64URL;
 import org.bouncycastle.math.ec.ECPoint;
@@ -23,6 +24,10 @@ import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.utils.Numeric;
 import org.web3j.crypto.ECKeyPair;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * A class with methods for introspecting a JWT token
@@ -123,6 +128,79 @@ public class WEB3 {
         return web3;
     }
 
+    //There are many types of publickey in this, compressed, uncompressed, hybird
+    //All these types can be decode by curve.decodePoint function
+    //prefix without '0x04' from uncompressed public key
+//    public static WEB3 publicWEB3(JWK publicKey) {
+//        // Create an ObjectMapper instance
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        // Parse the JSON string to create the JsonNode
+//        JsonNode jsonNode = null;
+//        try {
+//            jsonNode = objectMapper.readTree(publicKey.toJSONString());
+//            System.out.printf("publicKey json: %n%s%n", publicKey.toJSONString());
+//        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+//        }
+//        System.out.printf("pioint.y: %n%s%n", jsonNode.get("y"));
+//        Base64URL yBase64 = Base64URL.from(jsonNode.get("y").toString());
+//        byte[] yBytes = yBase64.decode();
+//        System.out.printf("pioint.y: %n%s%n", yBytes.toString());
+//        System.out.printf("pioint.y: %n%d%n", yBytes.length);
+//        System.out.printf("pioint.y: %n%s%n", Base64URL.encode(yBytes));
+//        String yHexStr = Numeric.toHexString(yBytes);
+//
+//        System.out.printf("pioint.x: %n%s%n", jsonNode.get("x"));
+//        Base64URL xBase64 = Base64URL.from(jsonNode.get("x").toString());
+//        byte[] xBytes = xBase64.decode();
+//        String xHexStr = Numeric.toHexString(xBytes);
+//
+//        String publicKeyHexStr = xHexStr.substring(2) + yHexStr.substring(2);
+//        System.out.printf("publicKeyStr: %n%s%n", publicKeyHexStr);
+//        BigInteger publicKeyBig = new BigInteger(publicKeyHexStr, 16);
+//        return publicWEB3(publicKeyBig);
+//    }
+
+    // Convert raw bytes to hexadecimal string
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = String.format("%02x", b);
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+    public static WEB3 publicWEB3(JWK publicKey) {
+        // Create an ObjectMapper instance
+        ObjectMapper objectMapper = new ObjectMapper();
+        // Parse the JSON string to create the JsonNode
+        JsonNode jsonNode = null;
+        try {
+            jsonNode = objectMapper.readTree(publicKey.toJSONString());
+            System.out.printf("publicKey json: %n%s%n", publicKey.toJSONString());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        System.out.printf("pioint.y: %n%s%n", jsonNode.get("y"));
+        Base64URL yBase64 = Base64URL.from(jsonNode.get("y").toString());
+        byte[] yBytes = yBase64.decode();
+        System.out.printf("pioint.y: %n%s%n", yBytes.toString());
+        System.out.printf("pioint.y: %n%d%n", yBytes.length);
+        System.out.printf("pioint.y: %n%s%n", Base64URL.encode(yBytes));
+        String yHexStr = bytesToHex(yBytes);
+
+        System.out.printf("pioint.x: %n%s%n", jsonNode.get("x"));
+        Base64URL xBase64 = Base64URL.from(jsonNode.get("x").toString());
+        byte[] xBytes = xBase64.decode();
+        String xHexStr = bytesToHex(xBytes);
+
+        String publicKeyHexStr = xHexStr + yHexStr;
+        System.out.printf("publicKeyStr: %n%s%n", publicKeyHexStr);
+        BigInteger publicKeyBig = new BigInteger(publicKeyHexStr, 16);
+        return publicWEB3(publicKeyBig);
+    }
+
     public WEB3(BigInteger privateKey) {
         try {
             this.point = Sign.publicPointFromPrivate(align2FieldSize(privateKey));
@@ -153,7 +231,9 @@ public class WEB3 {
         byte[] y = this.point.normalize().getYCoord().getEncoded();
         System.out.printf("pioint: %n%s%n", Hex.toHexString(encoded));
         System.out.printf("pioint.x: %n%s%n", Hex.toHexString(x));
+        System.out.printf("pioint.x: %n%s%n", Base64URL.encode(x));
         System.out.printf("pioint.y: %n%s%n", Hex.toHexString(y));
+        System.out.printf("pioint.x: %n%s%n", Base64URL.encode(y));
         System.out.printf("publickey: %n%s%n", Hex.toHexString(this.publicKey.toByteArray()));
         //System.out.printf("address: %n%s%n", Hex.toHexString(this.address.getBytes()));
         System.out.printf("address: %n%s%n", this.address);

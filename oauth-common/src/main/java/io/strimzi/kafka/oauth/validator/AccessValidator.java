@@ -13,6 +13,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.strimzi.kafka.oauth.common.JSONUtil;
 import io.strimzi.kafka.oauth.common.TimeUtil;
 import io.strimzi.kafka.oauth.common.TokenInfo;
+import io.strimzi.kafka.oauth.common.WEB3;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,12 +40,16 @@ public class AccessValidator {
     private static final Logger log = LoggerFactory.getLogger(JWTSignatureValidator.class);
     private final String token;
     private final boolean checkETHPayment;
+    private WEB3 web3;
+    private JsonNode payload;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public AccessValidator(String token,
                            boolean checkETHPayment) {
         this.token = token;
         this.checkETHPayment = checkETHPayment;
+        this.web3 = null;
+        this.payload = null;
     }
 
     public boolean ethValidate() {
@@ -91,7 +97,17 @@ public class AccessValidator {
         }
 
         validateTokenPayload(t);
+        this.payload = t;
+        this.web3 = WEB3.publicWEB3(publicKey);
         return true;
+    }
+
+    public JsonNode getPayload() {
+        return this.payload;
+    }
+
+    public WEB3 getWeb3() {
+        return this.web3;
     }
 
     private ECKey getPublicKey(String id) {
