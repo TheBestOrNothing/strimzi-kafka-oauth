@@ -4,8 +4,8 @@
  */
 package io.strimzi.kafka.oauth.server;
 
-import com.nimbusds.jose.JWSObject;
-import com.fasterxml.jackson.databind.JsonNode;
+//import com.nimbusds.jose.JWSObject;
+//import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 //import io.strimzi.kafka.oauth.common.Config;
 //import io.strimzi.kafka.oauth.common.ConfigException;
@@ -48,14 +48,14 @@ import java.util.Objects;
 //import java.util.Properties;
 import java.util.Set;
 //import java.util.function.Supplier;
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
+//import java.io.InputStream;
+//import java.io.ByteArrayInputStream;
 
 //import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
 //import static io.strimzi.kafka.oauth.common.TokenIntrospection.introspectAccessToken;
-import static io.strimzi.kafka.oauth.common.JSONUtil.readJSON;
+//import static io.strimzi.kafka.oauth.common.JSONUtil.readJSON;
 
 
 /**
@@ -285,46 +285,18 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
         String token = callback.tokenValue();
         NimbusPayloadTransformer transformer = new NimbusPayloadTransformer();
         AccessValidator validator = new AccessValidator(token, false);
-        if (validator.signatureValidate()) {
-            log.debug("-----------signatureValidate---------------------------");
-        } else {
-            log.debug("XXXXXXXXXXXXXXsignatureValidate-XXXXXXXXXXXXXXXXXXXXXX");
-        }
+        if (!validator.signatureValidate()) {
+            callback.error("validation error", "", "");
+            return;
+        } 
 
         try {
             debugLogToken(token);
 
-            //TokenInfo ti = validateToken(token);
-            //callback.token(new BearerTokenWithPayloadImpl(ti));
-
-            //Add following content to bypass validate token by Oauth2 server
-            //TokenInfo ti = introspectAccessToken(token, principalExtractor);
             TokenInfo ti = new TokenInfo(validator.getPayload(), token, validator.getWeb3().address);
             BearerTokenWithPayload tokenWithPayload = new BearerTokenWithPayloadImpl(ti);
 
-            //Payload means the resource to access 
-            JWSObject jws = JWSObject.parse(token);
-            JsonNode parsed = jws.getPayload().toType(transformer);
-
-            if (parsed.has("gitcoins")) {
-                log.debug("gitcoins asText: " + parsed.get("gitcoins").asText());
-                log.debug("----------------------------------------");
-                byte[] resourceAccessBytes = parsed.get("gitcoins").asText().getBytes("UTF-8");
-                InputStream inputStream = new ByteArrayInputStream(resourceAccessBytes);
-                JsonNode nodes = readJSON(inputStream, JsonNode.class);
-                for (JsonNode permission : nodes) {
-                    log.debug(permission.toString());
-                }
-                tokenWithPayload.setPayload(nodes);   
-            } else {
-                log.debug("resource_access is null ----------- ");
-            }
-
             callback.token(tokenWithPayload);
-            
-            if (log.isDebugEnabled()) {
-                log.debug("Set validated token on callback: " + callback.token());
-            }
 
         } catch (TokenValidationException e) {
             handleError("Token validation failed for token: " + mask(token), e);
@@ -553,3 +525,21 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
         }
     }
 }
+
+////Payload means the resource to access 
+//JWSObject jws = JWSObject.parse(token);
+//JsonNode parsed = jws.getPayload().toType(transformer);
+//
+//if (parsed.has("gitcoins")) {
+////    log.debug("gitcoins asText: " + parsed.get("gitcoins").asText());
+////    log.debug("----------------------------------------");
+//    byte[] resourceAccessBytes = parsed.get("gitcoins").asText().getBytes("UTF-8");
+//    InputStream inputStream = new ByteArrayInputStream(resourceAccessBytes);
+//    JsonNode nodes = readJSON(inputStream, JsonNode.class);
+////    for (JsonNode permission : nodes) {
+////        log.debug(permission.toString());
+////    }
+//    tokenWithPayload.setPayload(nodes);   
+//} else {
+//    log.debug("resource_access is null ----------- ");
+//}

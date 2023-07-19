@@ -21,6 +21,7 @@ import io.strimzi.kafka.oauth.server.OAuthKafkaPrincipal;
 //import io.strimzi.kafka.oauth.server.authorizer.metrics.GrantsHttpSensorKeyProducer;
 //import io.strimzi.kafka.oauth.server.authorizer.metrics.KeycloakAuthorizationSensorKeyProducer;
 import io.strimzi.kafka.oauth.services.OAuthMetrics;
+import io.strimzi.kafka.oauth.validator.AccessValidator;
 //import io.strimzi.kafka.oauth.services.ServiceException;
 //import io.strimzi.kafka.oauth.services.Services;
 //import io.strimzi.kafka.oauth.services.SessionFuture;
@@ -31,7 +32,9 @@ import kafka.security.authorizer.AclAuthorizer;
 import org.apache.kafka.common.Endpoint;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
+import org.apache.kafka.common.acl.AclOperation;
 import org.apache.kafka.common.resource.ResourcePattern;
+import org.apache.kafka.common.resource.ResourceType;
 import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.apache.kafka.server.authorizer.AclCreateResult;
 import org.apache.kafka.server.authorizer.AclDeleteResult;
@@ -69,7 +72,7 @@ import java.util.stream.Collectors;
 //import static io.strimzi.kafka.oauth.common.HttpUtil.post;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 //import static io.strimzi.kafka.oauth.common.OAuthAuthenticator.urlencode;
-import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
+//import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
 
 /**
  * An authorizer that grants access based on security policies managed in Keycloak Authorization Services.
@@ -358,51 +361,18 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
                 }
             }
 
-//            if (!(principal instanceof OAuthKafkaPrincipal)) {
-//                // If user wasn't authenticated over OAuth, and simple ACL delegation is enabled
-//                // we delegate to simple ACL
-//                result = delegateIfRequested(requestContext, actions, null);
-//
-//                addAuthzMetricSuccessTime(startTime);
-//                return result;
-//            }
-
-            OAuthKafkaPrincipal jwtPrincipal = (OAuthKafkaPrincipal) principal;
-
-            BearerTokenWithPayload token = jwtPrincipal.getJwt();
-//            JWSObject jws = JWSObject.parse(token.value());
-//            log.debug("token.keyID authorizer.keyID {}: {}", jws.getHeader().getKeyID(), keyID);
-//            
-//
-//            if (jws.getHeader().getKeyID().equals(keyID)) {
-//                log.debug("Authorization grants for who's key is eqaul to authorizer.keyID {}: {}", principal, actions);
-//                return Collections.nCopies(actions.size(), AuthorizationResult.ALLOWED);
-//            }
-            
-
-            if (denyIfTokenInvalid(token)) {
-                addAuthzMetricSuccessTime(startTime);
+            if (!(principal instanceof OAuthKafkaPrincipal)) {
+                // If user wasn't authenticated over OAuth, and simple ACL delegation is enabled
+                // we delegate to simple ACL
                 return Collections.nCopies(actions.size(), AuthorizationResult.DENIED);
             }
 
-            debugLogJWT(log, token.value());
-            grants = (JsonNode) token.getPayload();
+            OAuthKafkaPrincipal jwtPrincipal = (OAuthKafkaPrincipal) principal;
 
-            if (grants == null) {
-                log.debug("No grants yet for user: {}", principal);
-                //grants = handleFetchingGrants(token);
-            }
+            String token = jwtPrincipal.getJwt().value();
+            AccessValidator validator = new AccessValidator(token, false);
+            result = allowOrDeny(actions, validator);
 
-            if (log.isDebugEnabled()) {
-                log.debug("Authorization grants for user {}: {}", principal, grants);
-            }
-
-            if (grants != null) {
-                result = allowOrDenyBasedOnGrants(requestContext, actions, grants);
-            } else {
-                result = delegateIfRequested(requestContext, actions, null);
-            }
-            addAuthzMetricSuccessTime(startTime);
             return result;
 
         } catch (Throwable t) {
@@ -417,6 +387,68 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
             // Rethrowing would not trigger JVM shutdown, but it would log the error again, bloating the log file
 
             return Collections.nCopies(actions.size(), AuthorizationResult.DENIED);
+        }
+    }
+
+    //When Alice send one message to Bob
+    //Alice will create topic of Bob and send message to Bob
+    //Alice will not create topic of Alice
+    //Alice will not write message from topic of Alice
+    //Alice can not read the topic of Bob
+    //Only Bob can read the message from topic of Bob
+    private List<AuthorizationResult> allowOrDeny(List<Action> actions, AccessValidator validator) {
+        List<AuthorizationResult> results = new ArrayList<>(actions.size());
+        if (!validator.signatureValidate()) {
+            return Collections.nCopies(actions.size(), AuthorizationResult.DENIED);
+        }
+
+        //
+        // Iterate authorization rules and try to find a match
+        //
+        for (Action action : actions) {
+            //If Alice have paied, then She will have access to writing, configing, creating ...
+            //otherwise there is only read access
+            log.debug("allowOrDeny action: {}", action);
+            if (!validator.ethValidate()) {
+                if (action.operation() != AclOperation.READ) {
+                    results.add(AuthorizationResult.DENIED);
+                } else {
+                    results.add(readAllowed(action, validator));
+                }
+            } else {
+                if (action.operation() == AclOperation.READ) {
+                    results.add(readAllowed(action, validator));
+                } else {
+                    results.add(writeAllowed(action, validator));
+                }
+            }
+        }
+        return results;
+    }
+
+    // Action(resourcePattern='ResourcePattern(resourceType=TOPIC, name=72da2c71d561f2990d8ccecb28fe744fc746a757, patternType=LITERAL)', 
+    // operation='DESCRIBE', resourceReferenceCount='1', logIfAllowed='true', logIfDenied='true')
+    private AuthorizationResult readAllowed(Action action, AccessValidator validator) {
+        if (action.resourcePattern().resourceType() == ResourceType.TOPIC &&
+            !validator.getWeb3().accessReadTopic(action.resourcePattern().name())) {
+            log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX readAllowed DENIED: {}", action.resourcePattern().name());
+            return AuthorizationResult.DENIED;
+        } else {
+            return AuthorizationResult.ALLOWED;
+        }
+    }
+
+    private AuthorizationResult writeAllowed(Action action, AccessValidator validator) {
+        if (action.resourcePattern().resourceType() != ResourceType.TOPIC) {
+            return AuthorizationResult.ALLOWED;
+        }
+
+        String topicName = action.resourcePattern().name();
+        if (validator.getWeb3().isValidAddress(topicName)) {
+            return AuthorizationResult.ALLOWED;
+        } else {
+            log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX writeAllowed DENIED: {}", topicName);
+            return AuthorizationResult.DENIED;
         }
     }
 

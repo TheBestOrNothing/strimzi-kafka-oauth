@@ -12,7 +12,7 @@ cp ./oauth-server/target/kafka-oauth-server-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
 cp ./oauth-client/target/kafka-oauth-client-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
 cp ./oauth-keycloak-authorizer/target/kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
 cp ./oauth-common/target/kafka-oauth-common-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
-cp ./oauth-common/target/lib/nimbus-jose-jwt-9.10.jar ./kafka/authLibs
+cp ./oauth-common/target/lib/* ./kafka/authLibs
 
 # install kafak and config
 # curl -o ./kafka/kafka.tgz https://downloads.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz

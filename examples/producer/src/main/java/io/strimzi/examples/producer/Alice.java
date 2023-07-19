@@ -52,8 +52,7 @@ public class Alice {
      */
     public static void main(String[] args) {
 
-        String topic = "a_Topic1";
-
+        
         Properties defaults = new Properties();
         Config external = new Config();
         String alicePrivateKeyStr = "664ff46af60dbcd24ae6558fcabb541fa6c9399b42c1bf75335b998f3d6c9dd4";
@@ -62,6 +61,8 @@ public class Alice {
         String bobPrivateKeyStr = "2cb125848cbfd3c5916d255ad9d4a7ea12d744e490a979210d99a4629697139d";
         String bobPublicKeyStr = "00885d33d05eb8f0fc9f491dc63783ed3924db0fa0af9794104242b970c44773440c2038309995a03d67357186b222323be8c18b6121cc6670eb22ea92c0e99a47";
         String bobAddress = "72da2c71d561f2990d8ccecb28fe744fc746a757";
+
+        String topic = bobAddress;
 
         BigInteger alicePrivateKeyBig = new BigInteger(alicePrivateKeyStr, 16);
         BigInteger alicePublicKeyBig = new BigInteger(alicePublicKeyStr, 16);
@@ -108,7 +109,7 @@ public class Alice {
             }
 
             try {
-                Thread.sleep(20000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 throw new RuntimeException("Interrupted while sleeping!");
             }
@@ -125,7 +126,6 @@ public class Alice {
             JWSHeader header = signedJWT.getHeader();
             
             //Create resource_access add to the jwt
-            String resourceAccess = "[{\"scopes\":[\"Alter\",\"Read\",\"Describe\",\"Delete\",\"Write\",\"Create\",\"AlterConfigs\",\"DescribeConfigs\"],\"rsid\":\"f7bd27d0-e669-47dc-acc4-568c74332976\",\"rsname\":\"Topic:a_*\"},{\"scopes\":[\"Describe\",\"Write\"],\"rsid\":\"a7cf3178-110a-4165-9c86-fa8cdd8d4438\",\"rsname\":\"Topic:x_*\"},{\"scopes\":[\"Read\",\"Describe\"],\"rsid\":\"2dc8e81e-1b25-4537-b5c1-b8f782678336\",\"rsname\":\"Group:a_*\"},{\"scopes\":[\"IdempotentWrite\"],\"rsid\":\"d42b5bc3-6d68-4789-91e5-6f34f7ac9ab7\",\"rsname\":\"kafka-cluster:my-cluster,Cluster:*\"}]";
             ECKey ecJWK = alice.nimbusdsJWK;
 
             // Get the public EC key, for recipients to validate the signatures
@@ -138,7 +138,6 @@ public class Alice {
             Date newExpirationTime = new Date(System.currentTimeMillis() + 3600 * 1000); // 1 hour from now
             JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder(jwtClaimsSet);
             builder.expirationTime(newExpirationTime);
-            builder.claim("gitcoins", resourceAccess);
             JWTClaimsSet newClaimsSet = builder.build();
             
             // Create JWT for ES256K alg

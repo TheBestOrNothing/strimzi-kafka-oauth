@@ -19,6 +19,7 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.interfaces.ECPrivateKey;
+import java.util.Locale;
 
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
@@ -178,25 +179,25 @@ public class WEB3 {
         JsonNode jsonNode = null;
         try {
             jsonNode = objectMapper.readTree(publicKey.toJSONString());
-            System.out.printf("publicKey json: %n%s%n", publicKey.toJSONString());
+//            System.out.printf("publicKey json: %n%s%n", publicKey.toJSONString());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        System.out.printf("pioint.y: %n%s%n", jsonNode.get("y"));
+//        System.out.printf("pioint.y: %n%s%n", jsonNode.get("y"));
         Base64URL yBase64 = Base64URL.from(jsonNode.get("y").toString());
         byte[] yBytes = yBase64.decode();
-        System.out.printf("pioint.y: %n%s%n", yBytes.toString());
-        System.out.printf("pioint.y: %n%d%n", yBytes.length);
-        System.out.printf("pioint.y: %n%s%n", Base64URL.encode(yBytes));
+//        System.out.printf("pioint.y: %n%s%n", yBytes.toString());
+//        System.out.printf("pioint.y: %n%d%n", yBytes.length);
+//        System.out.printf("pioint.y: %n%s%n", Base64URL.encode(yBytes));
         String yHexStr = bytesToHex(yBytes);
 
-        System.out.printf("pioint.x: %n%s%n", jsonNode.get("x"));
+//        System.out.printf("pioint.x: %n%s%n", jsonNode.get("x"));
         Base64URL xBase64 = Base64URL.from(jsonNode.get("x").toString());
         byte[] xBytes = xBase64.decode();
         String xHexStr = bytesToHex(xBytes);
 
         String publicKeyHexStr = xHexStr + yHexStr;
-        System.out.printf("publicKeyStr: %n%s%n", publicKeyHexStr);
+//        System.out.printf("publicKeyStr: %n%s%n", publicKeyHexStr);
         BigInteger publicKeyBig = new BigInteger(publicKeyHexStr, 16);
         return publicWEB3(publicKeyBig);
     }
@@ -266,6 +267,7 @@ public class WEB3 {
         //BigInteger b = BigIntegers.fromUnsignedByteArray(sBytes);
         return sBytes;
     }
+
     public static void testWEB3() {
         System.out.println("WEB3 testing");
         WEB3 web1 = new WEB3();
@@ -278,6 +280,41 @@ public class WEB3 {
         web1.printWeb3();
         web1 = publicWEB3(web1.publicKey);
         web1.printWeb3();
+    }
+
+    public boolean isValidAddress(String address) {
+        if (!address.matches("^[0-9a-fA-F]{40}$")) {
+            return false;
+        }
+
+        // Check if the address is checksummed
+        try {
+            Locale en = Locale.forLanguageTag("en");
+            String checkSum = Keys.toChecksumAddress(address);
+            String checkSumLow = checkSum.toLowerCase(en);
+            String addressLow = address.toLowerCase(en);
+            return addressLow.equals(checkSumLow.substring(2));
+        } catch (Exception e) {
+            // Invalid format or error during checksum validation
+            return false;
+        }
+    }
+
+    //Only Alice can read the topic of address(Alice)
+    public boolean accessReadTopic(String topicName) {
+        if (!isValidAddress(topicName)) {
+            return false;
+        }
+
+        try {
+            Locale en = Locale.forLanguageTag("en");
+            String topicNameLow = topicName.toLowerCase(en);
+            String addressLow = address.toLowerCase(en);
+            return addressLow.equals(topicNameLow);
+        } catch (Exception e) {
+            // Invalid format or error during checksum validation
+            return false;
+        }
     }
 
     public static void printCurveParamByWeb3j() {
