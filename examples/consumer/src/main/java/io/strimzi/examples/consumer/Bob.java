@@ -90,18 +90,15 @@ public class Bob {
 
         //Properties props = buildConsumerConfig();
         Consumer<String, String> consumer = new KafkaConsumer<>(props);
+        consumer.subscribe(Arrays.asList(topic));
         //SECP256K1 secp256k1 = new SECP256K1();
         End2EndEncryption e2ee = new End2EndEncryption(alicePublic.nimbusdsJWK, bob.nimbusdsJWK);
 
         for (int i = 0; ; i++) {
             try {
-                consumer.subscribe(Arrays.asList(topic));
-
-                while (true) {
-                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
-                    for (ConsumerRecord<String, String> record : records) {
-                        System.out.println("Consumed message - " + i + ": " + e2ee.token2Message(record.value()));
-                    }
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(10));
+                for (ConsumerRecord<String, String> record : records) {
+                    System.out.println("Consumed message - " + i + ": " + e2ee.token2Message(record.value()));
                 }
             } catch (InterruptException e) {
                 throw new RuntimeException("Interrupted while consuming message - " + i + "!");
@@ -109,6 +106,12 @@ public class Bob {
             } catch (AuthenticationException | AuthorizationException e) {
                 consumer.close();
                 consumer = new KafkaConsumer<>(props);
+            }
+
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Interrupted while sleeping!");
             }
         }
 
@@ -138,6 +141,10 @@ public class Bob {
         p.setProperty("sasl.mechanism", "OAUTHBEARER");
         p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
         p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
+        p.setProperty("sasl.login.refresh.buffer.seconds", "300");
+        p.setProperty("sasl.login.refresh.min.period.seconds", "300");
+        p.setProperty("sasl.login.refresh.window.factor", "0.8");
+        p.setProperty("sasl.login.refresh.window.jitter", "0.05");
 
         p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         p.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());

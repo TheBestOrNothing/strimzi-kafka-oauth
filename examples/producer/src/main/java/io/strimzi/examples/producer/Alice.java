@@ -191,10 +191,10 @@ public class Alice {
 
         // Adjust re-authentication options
         // See: strimzi-kafka-oauth/README.md
-        p.setProperty("sasl.login.refresh.buffer.seconds", "30");
-        p.setProperty("sasl.login.refresh.min.period.seconds", "30");
+        p.setProperty("sasl.login.refresh.buffer.seconds", "300");
+        p.setProperty("sasl.login.refresh.min.period.seconds", "300");
         p.setProperty("sasl.login.refresh.window.factor", "0.8");
-        p.setProperty("sasl.login.refresh.window.jitter", "0.01");
+        p.setProperty("sasl.login.refresh.window.jitter", "0.05");
 
         return ConfigProperties.resolve(p);
     }
