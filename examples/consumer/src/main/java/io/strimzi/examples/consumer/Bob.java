@@ -109,7 +109,7 @@ public class Bob {
             }
 
             try {
-                Thread.sleep(10000);
+                Thread.sleep(5000);
             } catch (InterruptedException e) {
                 throw new RuntimeException("Interrupted while sleeping!");
             }
@@ -137,22 +137,33 @@ public class Bob {
 
         //Properties p = new Properties();
 
-        p.setProperty("security.protocol", "SASL_PLAINTEXT");
+        p.setProperty("security.protocol", "SASL_SSL");
         p.setProperty("sasl.mechanism", "OAUTHBEARER");
         p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
         p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
+
         p.setProperty("sasl.login.refresh.buffer.seconds", "300");
         p.setProperty("sasl.login.refresh.min.period.seconds", "300");
         p.setProperty("sasl.login.refresh.window.factor", "0.8");
         p.setProperty("sasl.login.refresh.window.jitter", "0.05");
 
-        p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "ubuntu:9092");
         p.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         p.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         p.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group");
         p.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10");
         p.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
+
+        p.setProperty("ssl.truststore.location", "/tmp/ssl/client.truststore.jks");
+        p.setProperty("ssl.truststore.password", "client-truststore-pass");
+        p.setProperty("ssl.keystore.location", "/tmp/ssl/client.keystore.jks");
+        p.setProperty("ssl.keystore.password", "client-keystore-pass");
+        p.setProperty("ssl.key.password", "client-keystore-pass");
+        p.setProperty("ssl.enabled.protocols", "TLSv1.2,TLSv1.1,TLSv1");
+        p.setProperty("ssl.client.auth", "required");
+        //p.setProperty("ssl.endpoint.identification.algorithm", "https");
+        p.setProperty("ssl.endpoint.identification.algorithm", "https");
 
         return ConfigProperties.resolve(p);
     }

@@ -7,6 +7,11 @@ mvn clean install -DskipTests
 mkdir kafka
 mkdir kafka/authLibs
 mkdir kafka/config
+# install certificate
+cd ssl
+. generator.sh
+cd ..
+cp -r ssl /tmp
 # Copy files to the destination directory
 cp ./oauth-server/target/kafka-oauth-server-1.0.0-SNAPSHOT*.jar ./kafka/authLibs
 cp ./oauth-client/target/kafka-oauth-client-1.0.0-SNAPSHOT*.jar ./kafka/authLibs

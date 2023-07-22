@@ -178,12 +178,13 @@ public class Alice {
 
         //Properties p = new Properties();
 
-        p.setProperty("security.protocol", "SASL_PLAINTEXT");
+        p.setProperty("security.protocol", "SASL_SSL");
         p.setProperty("sasl.mechanism", "OAUTHBEARER");
         p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
         p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
 
-        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "ubuntu:9092");
+        //p.setProperty("bootstrap.servers", "ubuntu");
         p.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
@@ -195,6 +196,16 @@ public class Alice {
         p.setProperty("sasl.login.refresh.min.period.seconds", "300");
         p.setProperty("sasl.login.refresh.window.factor", "0.8");
         p.setProperty("sasl.login.refresh.window.jitter", "0.05");
+
+        p.setProperty("ssl.truststore.location", "/tmp/ssl/client.truststore.jks");
+        p.setProperty("ssl.truststore.password", "client-truststore-pass");
+        p.setProperty("ssl.keystore.location", "/tmp/ssl/client.keystore.jks");
+        p.setProperty("ssl.keystore.password", "client-keystore-pass");
+        p.setProperty("ssl.key.password", "client-keystore-pass");
+        p.setProperty("ssl.enabled.protocols", "TLSv1.2,TLSv1.1,TLSv1");
+        p.setProperty("ssl.client.auth", "required");
+        //p.setProperty("ssl.endpoint.identification.algorithm", "https");
+        p.setProperty("ssl.endpoint.identification.algorithm", "https");
 
         return ConfigProperties.resolve(p);
     }

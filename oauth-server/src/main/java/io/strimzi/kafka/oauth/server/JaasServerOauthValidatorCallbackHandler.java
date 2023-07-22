@@ -9,7 +9,7 @@ package io.strimzi.kafka.oauth.server;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 //import io.strimzi.kafka.oauth.common.Config;
 //import io.strimzi.kafka.oauth.common.ConfigException;
-//import io.strimzi.kafka.oauth.common.ConfigUtil;
+import io.strimzi.kafka.oauth.common.ConfigUtil;
 import io.strimzi.kafka.oauth.common.BearerTokenWithPayload;
 import io.strimzi.kafka.oauth.common.IOUtil;
 import io.strimzi.kafka.oauth.common.PrincipalExtractor;
@@ -45,7 +45,7 @@ import javax.security.auth.login.AppConfigurationEntry;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-//import java.util.Properties;
+import java.util.Properties;
 import java.util.Set;
 //import java.util.function.Supplier;
 //import java.io.InputStream;
@@ -237,6 +237,30 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
         if (!OAuthBearerLoginModule.OAUTHBEARER_MECHANISM.equals(saslMechanism)) {
             throw new IllegalArgumentException(String.format("Unexpected SASL mechanism: %s", saslMechanism));
         }
+
+        parseJaasConfig(jaasConfigEntries);
+        verifier = ConfigUtil.createHostnameVerifier(config);
+    }
+
+    /**
+     * Parse the JAAS config into ServerConfig
+     *
+     * @param jaasConfigEntries JAAS config parameters
+     * @return ServerConfig instance
+     */
+    protected ServerConfig parseJaasConfig(List<AppConfigurationEntry> jaasConfigEntries) {
+        if (config != null) {
+            return config;
+        }
+        if (jaasConfigEntries.size() != 1) {
+            throw new IllegalArgumentException("Exactly one jaasConfigEntry expected (size: " + jaasConfigEntries.size());
+        }
+
+        AppConfigurationEntry e = jaasConfigEntries.get(0);
+        Properties p = new Properties();
+        p.putAll(e.getOptions());
+        config = new ServerConfig(p);
+        return config;
     }
 
     @Override
