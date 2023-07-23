@@ -1418,6 +1418,23 @@ QuickStart
     java -cp target/*:target/lib/* io.strimzi.examples.consumer.Bob
 ```
 
+- Summary in bashrc:
+```
+    alias zookeeper='bin/zookeeper-server-start.sh config/zookeeper.properties'
+    alias kafka='bin/kafka-server-start.sh config/server.properties'
+    alias stopall='docker rm -f kafka zookeeper keycloak'
+    alias auth='docker-compose -f compose.yml -f kafka-oauth-strimzi/compose.yml -f keycloak/compose.yml -f keycloak-import/compose.yml up --build'
+    alias authz='docker-compose -f compose.yml -f keycloak/compose.yml -f keycloak-import/compose.yml -f kafka-oauth-strimzi/compose-authz.yml up --build'
+    alias build='mvn clean install -DskipTests'
+    alias inKafka='docker exec -ti kafka /bin/sh'
+    alias producer='java -cp target/*:target/lib/* io.strimzi.examples.producer.Secp256k1Producer'
+    alias alice='java -cp target/*:target/lib/* io.strimzi.examples.producer.Alice'
+    alias consumer='java -cp target/*:target/lib/* io.strimzi.examples.consumer.Secp256k1Consumer'
+    alias bob='java -cp target/*:target/lib/* io.strimzi.examples.consumer.Bob'
+    alias token='java -cp target/*:target/lib/* io.strimzi.kafka.oauth.client.Web3AdminToken'
+
+```
+
 
 Github
 ----
