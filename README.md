@@ -1380,48 +1380,42 @@ QuickStart
 
 - Build and Install Libs in the project:
 ```
-    mvn clean install -DskipTests
-    cp following lib to the authlibs dir in whisper project
-    kafka-oauth-client-1.0.0-SNAPSHOT.jar               
-    kafka-oauth-client-1.0.0-SNAPSHOT-javadoc.jar       
-    kafka-oauth-client-1.0.0-SNAPSHOT-sources.jar       
-    kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT.jar
-    kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT-javadoc.jar
-    kafka-oauth-keycloak-authorizer-1.0.0-SNAPSHOT-sources.jar
-    kafka-oauth-server-1.0.0-SNAPSHOT.jar
-    kafka-oauth-server-1.0.0-SNAPSHOT-javadoc.jar
-    kafka-oauth-server-1.0.0-SNAPSHOT-sources.jar
-    kafka-oauth-common-1.0.0-SNAPSHOT-javadoc.jar       
-    kafka-oauth-common-1.0.0-SNAPSHOT.jar               
-    kafka-oauth-common-1.0.0-SNAPSHOT-sources.jar       
-    nimbus-jose-jwt-9.10.jar
+    #There will be kafka dir created which include all libs
+    ./deploy.sh
+```
+
+- Start Zookeeper:
+```
+    #Start zookeeper in the kafka dir
+    bin/zookeeper-server-start.sh config/zookeeper.properties
 ```
 
 - Create new keyID and token with KafkaAdminToken in oauth-client dir:
 ```
-    java -cp target/*:target/lib/* io.strimzi.kafka.oauth.client.KafkaAdminToken
+    #Get token in the oauth-client dir
+    java -cp target/*:target/lib/* io.strimzi.kafka.oauth.client.Web3AdminToken
 ```
 
-- Add the keyID and token to server.properies in config dir:
-
-- Start Zookeeper:
+- Export the token to system ENV:
 ```
-    bin/zookeeper-server-start.sh config/zookeeper.properties
+    export OAUTH_ACCESS_TOKEN=header.payload.sign
+    export CLASSPATH="./authLibs/*"
 ```
 
 - Start Kafka:
 ```
+    #Start kafka in the kafka dir
     bin/kafka-server-start.sh config/server.properties
 ```
 
 - Start producer in example/producer dir:
 ```
-    java -cp target/*:target/lib/* io.strimzi.examples.producer.Ecp256k1Producer
+    java -cp target/*:target/lib/* io.strimzi.examples.producer.Alice
 ```
 
 - Start consumer in example/consumer dir:
 ```
-    java -cp target/*:target/lib/* io.strimzi.examples.consumer.Ecp256k1Consumer
+    java -cp target/*:target/lib/* io.strimzi.examples.consumer.Bob
 ```
 
 
