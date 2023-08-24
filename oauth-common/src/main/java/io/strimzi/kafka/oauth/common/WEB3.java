@@ -15,9 +15,11 @@ import org.bouncycastle.util.encoders.Hex;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
+import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.util.Locale;
 
@@ -48,6 +50,9 @@ public class WEB3 {
     public WEB3() {
         try {
             //this.jwk = new ECKeyGenerator(Curve.SECP256K1).generate();
+            // Add BouncyCastleProvider to the Security Providers list
+            // Security.addProvider(new BouncyCastleProvider());
+            Security.insertProviderAt(new BouncyCastleProvider(), 1);
             this.nimbusdsJWK = new ECKeyGenerator(Curve.SECP256K1).generate();
             KeyPair javaKeyPair = this.nimbusdsJWK.toKeyPair();
             this.ecPrivateKey = (ECPrivateKey) javaKeyPair.getPrivate();

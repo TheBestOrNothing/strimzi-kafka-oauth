@@ -19,6 +19,7 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.Date;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import io.strimzi.kafka.oauth.common.WEB3;
 
 /**
@@ -81,7 +82,9 @@ public class Web3AdminToken {
                     newClaimsSet);
 
             // Sign with private EC key
-            jwt.sign(new ECDSASigner(ecJWK));
+            ECDSASigner signer = new ECDSASigner(ecJWK);
+            signer.getJCAContext().setProvider(new BouncyCastleProvider());
+            jwt.sign(signer);
 
             // Output the JWT
             token = jwt.serialize();

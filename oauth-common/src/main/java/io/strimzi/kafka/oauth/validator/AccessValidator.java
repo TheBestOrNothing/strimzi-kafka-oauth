@@ -4,6 +4,7 @@
  */
 package io.strimzi.kafka.oauth.validator;
 
+import com.nimbusds.jose.JWSVerifier;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
@@ -17,8 +18,7 @@ import io.strimzi.kafka.oauth.common.WEB3;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import static io.strimzi.kafka.oauth.validator.TokenValidationException.Status;
 
 /**
@@ -81,7 +81,9 @@ public class AccessValidator {
             }
 
             if (publicKey instanceof ECKey) {
-                if (!jwt.verify(new ECDSAVerifier((ECKey) publicKey))) {
+                JWSVerifier verifier = new ECDSAVerifier((ECKey) publicKey);
+                verifier.getJCAContext().setProvider(new BouncyCastleProvider());
+                if (!jwt.verify(verifier)) {
                     throw new TokenSignatureException("Signature check failed: Invalid token signature");
                 }
             } else {

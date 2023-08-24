@@ -38,6 +38,8 @@ import java.util.Date;
 import java.util.UUID;
 import java.math.BigInteger;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 
 /**
  * An example synchronous (single-threaded) producer implementation
@@ -150,7 +152,9 @@ public class Alice {
                     newClaimsSet);
 
             // Sign with private EC key
-            jwt.sign(new ECDSASigner(ecJWK));
+            ECDSASigner signer = new ECDSASigner(ecJWK);
+            signer.getJCAContext().setProvider(new BouncyCastleProvider());
+            jwt.sign(signer);
 
             // Output the JWT
             token = jwt.serialize();
