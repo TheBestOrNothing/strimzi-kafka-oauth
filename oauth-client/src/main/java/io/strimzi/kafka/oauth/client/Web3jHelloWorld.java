@@ -14,11 +14,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.UUID;
 /**
  * An example consumer implementation
  */
 //@SuppressFBWarnings("THROWS_METHOD_THROWS_RUNTIMEEXCEPTION")
-public class Web3jHello {
+public class Web3jHelloWorld {
 
     /**
      * A main method
@@ -63,7 +64,7 @@ public class Web3jHello {
             
             //Step5: call the contract function by wrapper
             System.out.println(hello.helloWorld().send());
-            hello.setText("testing").send();
+            hello.setText(UUID.randomUUID().toString()).send();
             System.out.println(hello.helloWorld().send());
             
             //Step6: Bug fixing to load the org.web3.utils
