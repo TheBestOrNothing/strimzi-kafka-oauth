@@ -44,30 +44,35 @@ public class Web3jHello {
         System.out.println(helloContractAddress);
         
         try {
-            //Step1: code, compile, unit test, and deployment one smart contract in Remix:
+            //Step1: create smart contract in Remix
 
-            //Step2: to generate the wrapper code, compile your smart contract:
+            //Step2: compile, unit test, and deployment the smart contract by Remix
+
+            //Step3: generate the java wrapper code
+            //Step3.1: create the bin and abi of contract
             // $ solc Whispeer.sol --bin --abi --optimize -o .
 
-            //Step3: then generate the wrapper code using the Web3j CLI:
+            //Step3.2: create the wrapper code using the Web3j CLI:
             // $ web3j generate solidity -b Whispeer.bin  -a Whispeer.abi -o . -p io.strimzi.kafka.oauth.client
             // cp Whispeer.java ~/kafka/whispeer-kafka-oauth/oauth-client/src/main/java/io/strimzi/kafka/oauth/client/
 
-            //Step4: Now you can create and deploy your smart contract:
-
-            //Step5: Create Web3j and Credentials to load the hello contract
+            //Step4: create Web3j and Credentials for loading the Hello by contract address which have been deployed on ETH by step2
             Web3j web3j = Web3j.build(new HttpService(alchemyProvider));  
-            Credentials credentials = Credentials.create(alice);
-
+            Credentials credentials = Credentials.create(alice.trim());
+            HelloWorld hello = HelloWorld.load(helloContractAddress, web3j, credentials, new DefaultGasProvider());
+            
+            //Step5: call the contract function by wrapper
+            System.out.println(hello.helloWorld().send());
+            hello.setText("testing").send();
+            System.out.println(hello.helloWorld().send());
+            
+            //Step6: Bug fixing to load the org.web3.utils
             //This command is just use org.web3j.utils to fix the following error
             // [ERROR] Unused declared dependencies found:
             // [ERROR]    org.web3j:utils:jar:4.9.8:compile
             System.out.println(Strings.isEmpty("0xb148b74d56a47cb2c2a789fe56e99aac5171f2ce"));
 
-            HelloWorld hello = HelloWorld.load(helloContractAddress, web3j, credentials, new DefaultGasProvider());
-            System.out.println(hello.helloWorld().send());
-            hello.setText("testing").send();
-            System.out.println(hello.helloWorld().send());
+            //Step7: shutdown the web3j provider
             web3j.shutdown();
         } catch (Exception e) {
             System.out.println("Exception Occure");
