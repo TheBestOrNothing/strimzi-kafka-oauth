@@ -38,6 +38,17 @@
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.76</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.bouncycastle/bctls-jdk18on -->
+		<dependency>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bctls-jdk18on</artifactId>
+		    <version>1.76</version>
+		</dependency>
     </dependencies>
 
     <build>

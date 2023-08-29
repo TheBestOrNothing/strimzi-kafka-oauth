@@ -50,11 +50,18 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
         </dependency>
-	<dependency>
+        <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.68</version>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.76</version>
         </dependency>
+		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bctls-jdk18on -->
+		<dependency>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bctls-jdk18on</artifactId>
+		    <version>1.76</version>
+		</dependency>
+
     </dependencies>
 
     <build>

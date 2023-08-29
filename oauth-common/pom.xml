@@ -62,18 +62,33 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.68</version>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.76</version>
         </dependency>
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>4.9.8</version>
+        </dependency>
+    
+        <!-- Web3j Solidity ABI library -->
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>abi</artifactId>
+            <version>4.9.8</version>
+        </dependency>
+    
+        <!-- Web3j Crypto library -->
         <dependency>
             <groupId>org.web3j</groupId>
             <artifactId>crypto</artifactId>
-            <version>5.0.0</version>
+            <version>4.9.8</version>
         </dependency>
+        <!-- Web3j Crypto library -->
         <dependency>
             <groupId>org.web3j</groupId>
             <artifactId>utils</artifactId>
-            <version>5.0.0</version>
+            <version>4.10.2</version>
         </dependency>
     </dependencies>
 

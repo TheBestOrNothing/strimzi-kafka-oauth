@@ -36,12 +36,19 @@ import com.nimbusds.jwt.SignedJWT;
 
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
+import java.security.Provider;
+import java.security.Security;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Properties;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jsse.provider.BouncyCastleJsseProvider;
 
 /**
  * An example consumer implementation
@@ -56,27 +63,71 @@ public class Bob {
      */
     public static void main(String[] args) {
 
+        // Register BouncyCastleProvider
+        BouncyCastleProvider bcProvider = new BouncyCastleProvider();
+
+        System.out.println("bcProvider.getInfo(): " + bcProvider.getInfo());
+        Package bcPackage = bcProvider.getClass().getPackage();
+
+        // Print the artifactId and version
+        System.out.println("Artifact ID: " + bcPackage.getImplementationTitle());
+        System.out.println("Version: " + bcPackage.getImplementationVersion());
+        System.out.println(bcPackage.getImplementationVendor());
+        System.out.println(bcPackage.getName());
+        System.out.println(bcPackage.getSpecificationTitle());
+        System.out.println(bcPackage.getSpecificationVendor());
+        System.out.println(bcPackage.getSpecificationVersion());
+        
+        BouncyCastleJsseProvider jsseProvider = new BouncyCastleJsseProvider();
+        Package jssePackage = jsseProvider.getClass().getPackage();
+        System.out.println(jssePackage.getImplementationVendor());
+        System.out.println(jssePackage.getName());
+        System.out.println(jssePackage.getSpecificationTitle());
+        System.out.println(jssePackage.getSpecificationVendor());
+        System.out.println(jssePackage.getSpecificationVersion());
+
+        //Security.addProvider(new BouncyCastleProvider());
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        Security.insertProviderAt(new BouncyCastleJsseProvider(), 2);
+
+        // Register BouncyCastleProvider
+        Provider[] providers = Security.getProviders();
+
+        for (Provider provider : providers) {
+            System.out.println("Name: " + provider.getName());
+            System.out.println("Version: " + provider.toString());
+            System.out.println("Info: " + provider.getInfo());
+            System.out.println("-----------------------------------------");
+        }
+
         Properties defaults = new Properties();
         Config external = new Config();
 
-        String alicePrivateKeyStr = "664ff46af60dbcd24ae6558fcabb541fa6c9399b42c1bf75335b998f3d6c9dd4";
-        String alicePublicKeyStr = "02915a388b28bf05e58421c3ee38a93c0954a249bc62397ed9d77d03eebe84346800c578ed7ce1287a98c47694c8434302e34cda56426b4f51b2e8d87d021ca9";
-        String aliceAddress = "41434c70f9317afdcafa3392e5f3208570824a55";
-        String bobPrivateKeyStr = "2cb125848cbfd3c5916d255ad9d4a7ea12d744e490a979210d99a4629697139d";
-        String bobPublicKeyStr = "00885d33d05eb8f0fc9f491dc63783ed3924db0fa0af9794104242b970c44773440c2038309995a03d67357186b222323be8c18b6121cc6670eb22ea92c0e99a47";
-        String bobAddress = "72da2c71d561f2990d8ccecb28fe744fc746a757";
+        Properties properties = new Properties();
+        try (InputStream inputStream = new FileInputStream("alicebob.properties")) {
+            properties.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
 
-        String topic = bobAddress;
+        // Retrieve values using property keys
+        String alchemyProvider = properties.getProperty("alchemyProvider");
+        if (alchemyProvider == null) {
+            System.out.println("alchemyProvider is null, please adapt the whispeer.properties file");
+        }
 
-        BigInteger alicePrivateKeyBig = new BigInteger(alicePrivateKeyStr, 16);
-        BigInteger alicePublicKeyBig = new BigInteger(alicePublicKeyStr, 16);
+        String bobPrivateKeyStr = properties.getProperty("bobPrivate");
+        String alicePublicKeyStr = properties.getProperty("alicePublic");
+        
         BigInteger bobPrivateKeyBig = new BigInteger(bobPrivateKeyStr, 16);
-        BigInteger bobPublicKeyBig = new BigInteger(bobPublicKeyStr, 16);
-
-        WEB3 alicePublic = WEB3.publicWEB3(alicePublicKeyBig);
-        alicePublic.printWeb3();
         WEB3 bob = new WEB3(bobPrivateKeyBig);
         bob.printWeb3();
+        
+        BigInteger alicePublicKeyBig = new BigInteger(alicePublicKeyStr, 16);
+        WEB3 alicePublic = WEB3.publicWEB3(alicePublicKeyBig);
+        alicePublic.printWeb3();
+        String topic = bob.address;
 
         //final String accessToken = external.getValue(ClientConfig.OAUTH_ACCESS_TOKEN, null);
         final String accessToken = getToken(bob);
@@ -138,6 +189,7 @@ public class Bob {
         //Properties p = new Properties();
 
         p.setProperty("security.protocol", "SASL_SSL");
+        //p.setProperty("security.providers", "org.bouncycastle.jce.provider.BouncyCastleProvider,org.bouncycastle.jsse.provider.BouncyCastleJsseProvider");
         p.setProperty("sasl.mechanism", "OAUTHBEARER");
         p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
         p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
@@ -155,6 +207,11 @@ public class Bob {
         p.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10");
         p.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
 
+        //p.setProperty("ssl.cipher.suites", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384");
+        p.setProperty("ssl.keymanager.algorithm", "PKIX");
+        p.setProperty("ssl.trustmanager.algorithm", "PKIX");
+        p.setProperty("ssl.keystore.type", "PKCS12");
+        p.setProperty("ssl.truststore.type", "PKCS12");
         p.setProperty("ssl.truststore.location", "/tmp/ssl/client.truststore.jks");
         p.setProperty("ssl.truststore.password", "client-truststore-pass");
         p.setProperty("ssl.keystore.location", "/tmp/ssl/client.keystore.jks");
@@ -204,7 +261,9 @@ public class Bob {
                     newClaimsSet);
 
             // Sign with private EC key
-            jwt.sign(new ECDSASigner(ecJWK));
+            ECDSASigner signer = new ECDSASigner(ecJWK);
+            signer.getJCAContext().setProvider(new BouncyCastleProvider());
+            jwt.sign(signer);
 
             // Output the JWT
             token = jwt.serialize();

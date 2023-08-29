@@ -9,7 +9,7 @@ mkdir kafka/authLibs
 mkdir kafka/config
 # install certificate
 cd ssl
-. generator.sh
+. bcGenerator.sh
 cd ..
 cp -r ssl /tmp
 # Copy files to the destination directory

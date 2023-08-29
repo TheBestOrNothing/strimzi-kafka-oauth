@@ -230,16 +230,34 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
 
     private OAuthMetrics metrics;
     protected SensorKeyProducer validationSensorKeyProducer;
+    
+    private String provider;
+    private String adminAdress;
+    private String whispeerAdress;
+    private String validation;
 
     @Override
     public void configure(Map<String, ?> configs, String saslMechanism, List<AppConfigurationEntry> jaasConfigEntries) {
 
+        for (Map.Entry<String, ?> entry : configs.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            System.out.println(key + ":" + value);
+        }
+        
         if (!OAuthBearerLoginModule.OAUTHBEARER_MECHANISM.equals(saslMechanism)) {
             throw new IllegalArgumentException(String.format("Unexpected SASL mechanism: %s", saslMechanism));
         }
 
         parseJaasConfig(jaasConfigEntries);
         verifier = ConfigUtil.createHostnameVerifier(config);
+        
+        provider = (String) configs.get("web3.provider");
+        adminAdress = (String) configs.get("web3.adminAdress");
+        whispeerAdress = (String) configs.get("web3.whispeerAdress");
+        validation = (String) configs.get("web3.validation");
+        log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX provider: {}", provider);
     }
 
     /**
@@ -308,11 +326,17 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
 
         String token = callback.tokenValue();
         NimbusPayloadTransformer transformer = new NimbusPayloadTransformer();
-        AccessValidator validator = new AccessValidator(token, false);
+        AccessValidator validator = new AccessValidator(token, validation.equalsIgnoreCase("required"));
+
         if (!validator.signatureValidate()) {
-            callback.error("validation error", "", "");
+            callback.error("validation error", "signature failure", validator.getWeb3().address);
             return;
-        } 
+        }
+
+        if (!validator.ethValidate(provider, adminAdress, whispeerAdress)) {
+            callback.error("validation error", "eth validation failure", validator.getWeb3().address);
+            return;
+        }
 
         try {
             debugLogToken(token);

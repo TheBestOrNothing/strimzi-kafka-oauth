@@ -21,6 +21,22 @@ import org.slf4j.LoggerFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import static io.strimzi.kafka.oauth.validator.TokenValidationException.Status;
 
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthCall;
+import org.web3j.protocol.http.HttpService;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * This class is responsible for validating the JWT token signatures during session authentication.
  * <p>
@@ -39,25 +55,63 @@ public class AccessValidator {
 
     private static final Logger log = LoggerFactory.getLogger(JWTSignatureValidator.class);
     private final String token;
-    private final boolean checkETHPayment;
+    private final boolean ethValidation;
     private WEB3 web3;
     private JsonNode payload;
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public AccessValidator(String token,
-                           boolean checkETHPayment) {
+                           boolean ethValidation) {
         this.token = token;
-        this.checkETHPayment = checkETHPayment;
+        this.ethValidation = ethValidation;
         this.web3 = null;
         this.payload = null;
     }
 
-    public boolean ethValidate() {
-        if (!checkETHPayment) {
+    public boolean ethValidate(String provider, String adminAdress, String whispeerAdress) {
+
+        boolean status = false;
+        if (!ethValidation) {
             return true;
         }
 
-        return true;
+        Web3j web3j = Web3j.build(new HttpService(provider)); 
+        Function function = new Function(
+                "getExpirationTime",
+                Collections.singletonList(new Address(this.web3.address)), // Function parameters
+                Collections.singletonList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.generated.Uint256>() { })); // Return type
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        //from = admin; to = whispeerAddress; data = encodedFunction;
+        Transaction transaction = new Transaction(adminAdress, null, null, null, whispeerAdress, null, encodedFunction, null, null, null);
+        EthCall response = null;
+        try {
+            response = web3j.ethCall(transaction, DefaultBlockParameterName.LATEST).send();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return false;
+        }
+
+        List<Type> result = FunctionReturnDecoder.decode(
+                response.getValue(),
+                function.getOutputParameters());
+
+        BigInteger expirationTime = (BigInteger) result.get(0).getValue();
+
+        long current = System.currentTimeMillis() / 1000;
+        System.out.println("User's expiration time: " + expirationTime);
+        System.out.println("Current system time: " + current);
+        if (expirationTime.longValue() > current) {
+            status = true;
+        } else {
+            status = false;
+        }
+
+        // Shut down the provider
+        web3j.shutdown();
+        return status;
     }
 
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",

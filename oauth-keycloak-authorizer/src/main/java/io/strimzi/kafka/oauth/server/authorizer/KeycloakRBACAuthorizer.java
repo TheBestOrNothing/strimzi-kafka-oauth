@@ -200,6 +200,11 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
     private SensorKeyProducer authzSensorKeyProducer;
     private SensorKeyProducer grantsSensorKeyProducer;
     private final Semaphores<JsonNode> semaphores = new Semaphores<>();
+    
+    private String provider;
+    private String adminAdress;
+    private String whispeerAdress;
+    private String validation;
 
     /**
      * Create a new instance
@@ -229,6 +234,11 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
 
         configureSuperUsers(configs);
 //        keyID = (String) configs.get("authorizer.keyID");
+
+        provider = (String) configs.get("web3.provider");
+        adminAdress = (String) configs.get("web3.adminAdress");
+        whispeerAdress = (String) configs.get("web3.whispeerAdress");
+        validation = (String) configs.get("web3.validation");
 
     }
 
@@ -370,7 +380,7 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
             OAuthKafkaPrincipal jwtPrincipal = (OAuthKafkaPrincipal) principal;
 
             String token = jwtPrincipal.getJwt().value();
-            AccessValidator validator = new AccessValidator(token, false);
+            AccessValidator validator = new AccessValidator(token, validation.equalsIgnoreCase("required"));
             result = allowOrDeny(actions, validator);
 
             return result;
@@ -409,7 +419,7 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
             //If Alice have paied, then She will have access to writing, configing, creating ...
             //otherwise there is only read access
             log.debug("allowOrDeny action: {}", action);
-            if (!validator.ethValidate()) {
+            if (!validator.ethValidate(provider, adminAdress, whispeerAdress)) {
                 if (action.operation() != AclOperation.READ) {
                     results.add(AuthorizationResult.DENIED);
                 } else {

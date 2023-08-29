@@ -29,6 +29,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * An example consumer implementation
@@ -112,7 +116,8 @@ public class Web3jWhispeerGetExpirationTime {
         // Get Alice's expiration Time after transaction have been mined
         // System.out.println("Alice's expiration time: " + whispeer.getAdmin().send());
         try {
-            System.out.println("Expiration Time: " + whispeer.getExpirationTime(aliceAddress).send());
+            BigInteger expirationTime = whispeer.getExpirationTime(aliceAddress).send();
+            System.out.println("Expiration Time: " + unix2UTC(expirationTime));
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -155,8 +160,25 @@ public class Web3jWhispeerGetExpirationTime {
                 function.getOutputParameters());
 
         if (!result.isEmpty()) {
-            System.out.println("Expiration Time: " + (BigInteger) result.get(0).getValue());
+            BigInteger expirationTime = (BigInteger) result.get(0).getValue();
+            System.out.println("Expiration Time: " + unix2UTC(expirationTime));
         }
 
+    }
+
+    private static String unix2UTC(BigInteger timestamp) {
+        // Convert the timestamp to an Instant
+        Instant instant = Instant.ofEpochSecond(timestamp.longValue());
+
+        // Create a ZonedDateTime in UTC timezone
+        ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of("UTC"));
+
+        // Define a date and time format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+
+        // Format and print the converted timestamp in UTC
+        String utcDateTime = zonedDateTime.format(formatter);
+        //System.out.println("UTC DateTime: " + utcDateTime);
+        return utcDateTime;
     }
 }
