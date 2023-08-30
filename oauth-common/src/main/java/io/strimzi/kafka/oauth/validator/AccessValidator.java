@@ -84,7 +84,7 @@ public class AccessValidator {
         }
 
         BigInteger expirationTime = whiteList.get(address);
-        if (expirationTime.longValue() > current) {
+        if (expirationTime != null && expirationTime.longValue() > current) {
             return true;
         }
 

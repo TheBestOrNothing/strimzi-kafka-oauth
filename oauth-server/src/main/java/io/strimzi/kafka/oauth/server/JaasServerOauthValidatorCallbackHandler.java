@@ -43,7 +43,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.AppConfigurationEntry;
 
 import java.math.BigInteger;
-import java.util.Collections;
+import java.util.HashMap;
 //import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -239,8 +239,8 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
     private String whispeerAdress;
     private String validation;
 
-    private Map<String, BigInteger> whiteList = Collections.emptyMap();
-    private Map<String, BigInteger> blackList = Collections.emptyMap();
+    private Map<String, BigInteger> whiteList;
+    private Map<String, BigInteger> blackList;
 
     @Override
     public void configure(Map<String, ?> configs, String saslMechanism, List<AppConfigurationEntry> jaasConfigEntries) {
@@ -263,7 +263,9 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
         adminAdress = (String) configs.get("web3.adminAdress");
         whispeerAdress = (String) configs.get("web3.whispeerAdress");
         validation = (String) configs.get("web3.validation");
-        log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX provider: {}", provider);
+        whiteList = new HashMap<String, BigInteger>();
+        blackList = new HashMap<String, BigInteger>();
+        log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX provider: {}", provider);
     }
 
     /**
@@ -295,6 +297,7 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
     @Override
     public void handle(Callback[] callbacks) throws UnsupportedCallbackException {
 
+        log.debug("..................................................................................");
         long requestStartTime = System.currentTimeMillis();
         try {
             delegatedHandle(callbacks);
