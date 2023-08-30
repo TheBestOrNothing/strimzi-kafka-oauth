@@ -41,6 +41,9 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.AppConfigurationEntry;
+
+import java.math.BigInteger;
+import java.util.Collections;
 //import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -236,6 +239,9 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
     private String whispeerAdress;
     private String validation;
 
+    private Map<String, BigInteger> whiteList = Collections.emptyMap();
+    private Map<String, BigInteger> blackList = Collections.emptyMap();
+
     @Override
     public void configure(Map<String, ?> configs, String saslMechanism, List<AppConfigurationEntry> jaasConfigEntries) {
 
@@ -333,7 +339,7 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
             return;
         }
 
-        if (!validator.ethValidate(provider, adminAdress, whispeerAdress)) {
+        if (!validator.ethValidate(whiteList, blackList, provider, adminAdress, whispeerAdress)) {
             callback.error("validation error", "eth validation failure", validator.getWeb3().address);
             return;
         }

@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class is responsible for validating the JWT token signatures during session authentication.
@@ -68,17 +69,29 @@ public class AccessValidator {
         this.payload = null;
     }
 
-    public boolean ethValidate(String provider, String adminAdress, String whispeerAdress) {
+    public boolean ethValidate(Map<String, BigInteger> whiteList, Map<String, BigInteger> blackList, String provider, String adminAdress, String whispeerAdress) {
 
         boolean status = false;
+        long current = System.currentTimeMillis() / 1000;
+        String address = this.web3.address;
+
         if (!ethValidation) {
+            return true;
+        }
+
+        if (blackList.get(address) != null) {
+            return false;
+        }
+
+        BigInteger expirationTime = whiteList.get(address);
+        if (expirationTime.longValue() > current) {
             return true;
         }
 
         Web3j web3j = Web3j.build(new HttpService(provider)); 
         Function function = new Function(
                 "getExpirationTime",
-                Collections.singletonList(new Address(this.web3.address)), // Function parameters
+                Collections.singletonList(new Address(address)), // Function parameters
                 Collections.singletonList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.generated.Uint256>() { })); // Return type
 
         String encodedFunction = FunctionEncoder.encode(function);
@@ -98,14 +111,17 @@ public class AccessValidator {
                 response.getValue(),
                 function.getOutputParameters());
 
-        BigInteger expirationTime = (BigInteger) result.get(0).getValue();
+        expirationTime = (BigInteger) result.get(0).getValue();
 
-        long current = System.currentTimeMillis() / 1000;
         System.out.println("User's expiration time: " + expirationTime);
         System.out.println("Current system time: " + current);
-        if (expirationTime.longValue() > current) {
+        if (expirationTime.longValue() >= current) {
+            whiteList.put(address, expirationTime);
             status = true;
         } else {
+            //Add the web3.address to the blackList, because one client must check the expirationTime by self.
+            //If the expirationTime < current, it means hackers try to attack the kafka server.
+            blackList.put(address, new BigInteger("10"));
             status = false;
         }
 

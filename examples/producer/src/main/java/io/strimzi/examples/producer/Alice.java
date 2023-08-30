@@ -134,6 +134,7 @@ public class Alice {
         WEB3 bobPublic = WEB3.publicWEB3(bobPublicKeyBig);
         bobPublic.printWeb3();
         String topic = bobPublic.address;
+        System.out.println("topic topic " + topic);
 
         final String accessToken = getAccessToken(alice);
         //System.out.println(accessToken);

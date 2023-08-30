@@ -189,7 +189,7 @@ public class Bob {
         //Properties p = new Properties();
 
         p.setProperty("security.protocol", "SASL_SSL");
-        //p.setProperty("security.providers", "org.bouncycastle.jce.provider.BouncyCastleProvider,org.bouncycastle.jsse.provider.BouncyCastleJsseProvider");
+        p.setProperty("security.providers", "org.bouncycastle.jce.provider.BouncyCastleProvider,org.bouncycastle.jsse.provider.BouncyCastleJsseProvider");
         p.setProperty("sasl.mechanism", "OAUTHBEARER");
         p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
         p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");

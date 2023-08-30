@@ -419,18 +419,24 @@ public class KeycloakRBACAuthorizer extends AclAuthorizer {
             //If Alice have paied, then She will have access to writing, configing, creating ...
             //otherwise there is only read access
             log.debug("allowOrDeny action: {}", action);
-            if (!validator.ethValidate(provider, adminAdress, whispeerAdress)) {
-                if (action.operation() != AclOperation.READ) {
-                    results.add(AuthorizationResult.DENIED);
-                } else {
-                    results.add(readAllowed(action, validator));
-                }
+//            if (!validator.ethValidate(provider, adminAdress, whispeerAdress)) {
+//                if (action.operation() != AclOperation.READ) {
+//                    results.add(AuthorizationResult.DENIED);
+//                } else {
+//                    results.add(readAllowed(action, validator));
+//                }
+//            } else {
+//                if (action.operation() == AclOperation.READ) {
+//                    results.add(readAllowed(action, validator));
+//                } else {
+//                    results.add(writeAllowed(action, validator));
+//                }
+//            }
+
+            if (action.operation() == AclOperation.READ) {
+                results.add(readAllowed(action, validator));
             } else {
-                if (action.operation() == AclOperation.READ) {
-                    results.add(readAllowed(action, validator));
-                } else {
-                    results.add(writeAllowed(action, validator));
-                }
+                results.add(writeAllowed(action, validator));
             }
         }
         return results;
