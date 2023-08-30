@@ -15,11 +15,12 @@ import org.bouncycastle.util.encoders.Hex;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+//import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyPair;
-import java.security.Security;
+//import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.util.Locale;
 
@@ -31,6 +32,10 @@ import org.web3j.crypto.ECKeyPair;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.Response;
+import org.asynchttpclient.AsyncHttpClient;
 
 /**
  * A class with methods for introspecting a JWT token
@@ -52,7 +57,7 @@ public class WEB3 {
             //this.jwk = new ECKeyGenerator(Curve.SECP256K1).generate();
             // Add BouncyCastleProvider to the Security Providers list
             // Security.addProvider(new BouncyCastleProvider());
-            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+            // Security.insertProviderAt(new BouncyCastleProvider(), 1);
             this.nimbusdsJWK = new ECKeyGenerator(Curve.SECP256K1).generate();
             KeyPair javaKeyPair = this.nimbusdsJWK.toKeyPair();
             this.ecPrivateKey = (ECPrivateKey) javaKeyPair.getPrivate();
@@ -132,6 +137,39 @@ public class WEB3 {
         //this.address = Keys.getAddress(this.ecKeyPair.getPublicKey());
         web3.nimbusdsJWK = new ECKey.Builder(Curve.SECP256K1, Base64URL.encode(x), Base64URL.encode(y)).build();
         return web3;
+    }
+
+    public static boolean checkProvider(String provider) {
+
+        boolean status = false;
+        AsyncHttpClient client = new DefaultAsyncHttpClient();
+
+        try {
+            Response response = client.prepare("POST", provider)
+                    .setHeader("accept", "application/json")
+                    .setHeader("content-type", "application/json")
+                    .setBody("{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"eth_gasPrice\"}")
+                    .execute()
+                    .toCompletableFuture()
+                    .join();
+
+            if (response.getStatusCode() == 200) {
+                String responseBody = response.getResponseBody();
+                System.out.println("Response: " + responseBody);
+                status = true;
+            } 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            client.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return status;
     }
 
     //There are many types of publickey in this, compressed, uncompressed, hybird

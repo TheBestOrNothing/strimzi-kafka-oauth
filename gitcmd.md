@@ -11,6 +11,7 @@
 # If there are files changes
 ```
     git add .
+    git add -u
 ```
 
 # Commit all the changes 

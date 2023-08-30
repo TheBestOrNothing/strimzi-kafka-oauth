@@ -80,12 +80,18 @@ public class AccessValidator {
         }
 
         if (blackList.get(address) != null) {
+            log.debug("Reject hacker to access the kafka broker {} ", address);
             return false;
         }
 
         BigInteger expirationTime = whiteList.get(address);
         if (expirationTime != null && expirationTime.longValue() > current) {
             return true;
+        }
+
+        if (!WEB3.checkProvider(provider)) {
+            log.debug("Failure to validate API key {} ", provider);
+            return false;
         }
 
         Web3j web3j = Web3j.build(new HttpService(provider)); 
@@ -122,6 +128,7 @@ public class AccessValidator {
             //Add the web3.address to the blackList, because one client must check the expirationTime by self.
             //If the expirationTime < current, it means hackers try to attack the kafka server.
             blackList.put(address, new BigInteger("10"));
+            log.debug("Hacker {} try to attack the kafka broker", address);
             status = false;
         }
 

@@ -119,9 +119,10 @@ public class Alice {
 
         // Retrieve values using property keys
         String alchemyProvider = properties.getProperty("alchemyProvider");
-        if (alchemyProvider == null) {
-            System.out.println("alchemyProvider is null, please adapt the whispeer.properties file");
-        }        
+        if (!WEB3.checkProvider(alchemyProvider)) {
+            System.out.println("Failure to validate API key: " + alchemyProvider);
+            return;
+        }
 
         String alicePrivateKeyStr = properties.getProperty("alicePrivate");
         String bobPublicKeyStr = properties.getProperty("bobPublic");

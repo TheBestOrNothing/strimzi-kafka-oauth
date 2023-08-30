@@ -57,8 +57,6 @@ import java.util.Set;
 //import static io.strimzi.kafka.oauth.common.DeprecationUtil.isAccessTokenJwt;
 import static io.strimzi.kafka.oauth.common.LogUtil.mask;
 import static io.strimzi.kafka.oauth.common.TokenIntrospection.debugLogJWT;
-//import static io.strimzi.kafka.oauth.common.TokenIntrospection.introspectAccessToken;
-//import static io.strimzi.kafka.oauth.common.JSONUtil.readJSON;
 
 
 /**
@@ -297,7 +295,7 @@ public class JaasServerOauthValidatorCallbackHandler implements AuthenticateCall
     @Override
     public void handle(Callback[] callbacks) throws UnsupportedCallbackException {
 
-        log.debug("..................................................................................");
+        log.debug("...........................................................................................");
         long requestStartTime = System.currentTimeMillis();
         try {
             delegatedHandle(callbacks);
