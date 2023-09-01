@@ -5,13 +5,13 @@ rm server*
 
 touch server.config
 #echo 'subjectAltName=DNS:*.gitcoins.io,DNS:*.gitcoins.com,DNS:localhost,IP:0.0.0.0' > server.config
-echo 'subjectAltName=DNS:ubuntu' > server.config
+echo 'subjectAltName=DNS:kafka01' > server.config
 
 ## Create your own Certificate Authority (CA)
 # Generate a CA that is simply a public-private key pair and certificate, 
 # and it is intended to sign other certificates.
 openssl req -new -x509 -keyout ca-key -out ca-cert -days 365 \
-	-subj "/CN=ubuntu" \
+	-subj "/CN=kafka01" \
 	-passout pass:ca-key-pass
 
 # Add the generated CA to the clients’ truststore so that the clients can trust this CA
@@ -28,7 +28,7 @@ keytool -keystore server.truststore.jks -alias CARoot -importcert -file ca-cert 
 
 ############################## Gen Server keypairs #########################################
 keytool -keystore server.keystore.jks -keyalg RSA -validity 365  \
-	-genkey -dname "CN=ubuntu" \
+	-genkey -dname "CN=kafka01" \
 	-alias localhost -storepass server-keystore-pass -storetype PKCS12 \
 	-provider org.bouncycastle.jce.provider.BouncyCastleProvider \
 	-providerPath ./bcprov-jdk18on-1.76.jar
@@ -65,7 +65,7 @@ keytool -keystore server.keystore.jks -alias localhost -importcert -file server-
 
 ############################## Gen Client keypairs #########################################
 keytool -keystore client.keystore.jks -keyalg RSA -validity 365  \
-	-genkey -dname "CN=ubuntu" \
+	-genkey -dname "CN=kafka01" \
 	-alias client -storepass client-keystore-pass -storetype PKCS12 \
 	-provider org.bouncycastle.jce.provider.BouncyCastleProvider \
 	-providerPath ./bcprov-jdk18on-1.76.jar

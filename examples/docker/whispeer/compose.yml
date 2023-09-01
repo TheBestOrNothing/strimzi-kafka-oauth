@@ -3,15 +3,15 @@ version: '3.5'
 services:
 
 #################################### KAFKA BROKER ####################################
-  kafka:
-    image: kafka
+  kafka01:
+    image: kafka01
     build:
-      context: whispeer/kafka
-      dockerfile: Dockerfile
+      context: whispeer/
+      dockerfile: ./kafka/Dockerfile
 #    restart: always
     restart: on-failure
-    hostname: kafka
-    container_name: kafka
+    hostname: kafka01
+    container_name: kafka01
     privileged: true
     tty: true
     stdin_open: true
@@ -20,41 +20,30 @@ services:
 
     environment:
 
-      LOG_DIR: /home/kafka/logs
-      KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      LOG_DIR: /home/kafka01/logs
+      KAFKA_ADVERTISED_HOST_NAME: kafka01
+      KAFKA_LISTENERS: PLAINTEXT://kafka01:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka01:9092
       KAFKA_ADVERTISED_PORT: 9092
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper01:2181
  
 
     depends_on:
-      - zookeeper
-#    networks:
-#      kafka-own:
-#        ipv4_address: 192.168.3.21
+      - zookeeper01
 
-  zookeeper:
-    image: zookeeper
+  zookeeper01:
+    image: zookeeper01
     build:  
-      context: whispeer/kafka
-      dockerfile: Dockerfile
+      context: whispeer/
+      dockerfile: ./zookeeper/Dockerfile
     restart: on-failure
-    hostname: zookeeper
-    container_name: zookeeper
+    hostname: zookeeper01
+    container_name: zookeeper01
     tty: true
     stdin_open: true
     ports:
       - 2181:2181
     environment:
-      LOG_DIR: /home/kafka/logs
+      LOG_DIR: /home/zookeeper01/logs
 
-#    networks:
-#      kafka-own:
-#        ipv4_address: 192.168.3.11
-
-#networks:
-#  kafka-own:
-#    external:
-#      name: kafka-own

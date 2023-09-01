@@ -250,7 +250,7 @@ public class Alice {
         p.setProperty("sasl.jaas.config", "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;");
         p.setProperty("sasl.login.callback.handler.class", "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
 
-        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "ubuntu:9092");
+        p.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka01:9092");
         //p.setProperty("bootstrap.servers", "ubuntu");
         p.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         p.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());

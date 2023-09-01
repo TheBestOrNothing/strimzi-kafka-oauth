@@ -201,7 +201,7 @@ public class Bob {
         p.setProperty("sasl.login.refresh.window.factor", "0.8");
         p.setProperty("sasl.login.refresh.window.jitter", "0.05");
 
-        p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "ubuntu:9092");
+        p.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka01:9092");
         p.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         p.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
