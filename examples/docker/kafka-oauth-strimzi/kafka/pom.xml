@@ -69,11 +69,13 @@
                         <artifactItem>
                             <groupId>io.strimzi</groupId>
                             <artifactId>kafka-oauth-server</artifactId>
-                        </artifactItem>
+		        </artifactItem>
+<!--
                         <artifactItem>
                             <groupId>io.strimzi</groupId>
                             <artifactId>kafka-oauth-server-plain</artifactId>
-                        </artifactItem>
+			</artifactItem>
+-->
                         <artifactItem>
                             <groupId>io.strimzi</groupId>
                             <artifactId>kafka-oauth-common</artifactId>

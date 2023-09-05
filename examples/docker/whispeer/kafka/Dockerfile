@@ -1,5 +1,5 @@
 #FROM registry.cn-hangzhou.aliyuncs.com/imagesdd/centos7.6-kafka:3.4.1
-FROM registry.cn-hangzhou.aliyuncs.com/imagesdd/ubuntu22.04-kafka:v1
+FROM registry.cn-hangzhou.aliyuncs.com/imagesdd/ubuntu22.04-kafka:v3
 RUN mkdir -p /kafka/authLibs
 RUN mkdir -p /tmp/ssl
 
@@ -10,7 +10,7 @@ COPY ./kafka/libs-producer/bctls-jdk18on-1.76.jar /kafka/authLibs/
 COPY ./kafka/libs-producer/bcutil-jdk18on-1.76.jar /kafka/authLibs/
 COPY ./kafka/target/libs/* /kafka/authLibs/
 
-RUN echo "CLASSPATH=/kafka/authLibs/*">>/etc/profile
+RUN echo "CLASSPATH=$CLASSPATH:/kafka/authLibs/*">>/etc/profile
 #RUN source /etc/profile
 RUN . /etc/profile
 COPY ./config/* /kafka/config/

@@ -21,13 +21,8 @@ services:
     environment:
 
       LOG_DIR: /home/kafka01/logs
-      KAFKA_ADVERTISED_HOST_NAME: kafka01
-      KAFKA_LISTENERS: PLAINTEXT://kafka01:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka01:9092
-      KAFKA_ADVERTISED_PORT: 9092
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper01:2181
- 
 
     depends_on:
       - zookeeper01
