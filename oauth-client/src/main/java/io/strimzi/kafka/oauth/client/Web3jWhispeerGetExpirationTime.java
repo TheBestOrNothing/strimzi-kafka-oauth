@@ -18,6 +18,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.Response;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Address;
@@ -33,6 +36,8 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 /**
  * An example consumer implementation
@@ -86,6 +91,10 @@ public class Web3jWhispeerGetExpirationTime {
             getExpirationTimeWithAdminPrivateKey(web3j, whispeerContractAddress, adminPrivateKey, aliceAddress);
 
             getExpirationTimeWithAdminAddress(web3j, whispeerContractAddress, adminAddress, aliceAddress);
+            
+            getExpirationTimeWithHttpClient(alchemyProvider, whispeerContractAddress, adminAddress, aliceAddress);
+
+            getExpirationTimeWithJSONObject(alchemyProvider, whispeerContractAddress, adminAddress, aliceAddress);
 
             web3j.shutdown();
         } catch (Exception e) {
@@ -166,6 +175,147 @@ public class Web3jWhispeerGetExpirationTime {
 
     }
 
+    public static boolean getExpirationTimeWithHttpClient(String provider, String whispeerContractAddress, String adminAddress, String aliceAddress)  {
+
+        boolean status = false;
+        AsyncHttpClient client = new DefaultAsyncHttpClient();
+
+        Function function = new Function(
+                "getExpirationTime",
+                Collections.singletonList(new Address(aliceAddress)), // Function parameters
+                Collections.singletonList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.generated.Uint256>() { })); // Return type
+
+        String encodedFunction = FunctionEncoder.encode(function);
+        
+        String from = adminAddress;
+        String to = whispeerContractAddress;
+        String data = encodedFunction;
+        //Transaction transaction = new Transaction(from, null, null, null, to, null, data, null, null, null);
+
+        try {
+
+            Response response = client.prepare("POST", provider)
+                      .setHeader("accept", "application/json")
+                      .setHeader("content-type", "application/json")
+                      .setBody("{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"" + to + "\",\"from\":\"" + from + "\",\"data\":\"" + data + "\"},\"latest\"]}")
+                      .execute()
+                      .toCompletableFuture()
+                      .join();
+
+
+            if (response.getStatusCode() == 200) {
+                String jsonResponse = response.getResponseBody();
+                System.out.println("Response: " + jsonResponse);
+                status = true;
+
+                // Parse the JSON response using org.json.JSONObject
+                JSONObject jsonObject = new JSONObject(jsonResponse);
+
+                // Get the "result" value as a hexadecimal string
+                String resultHex = jsonObject.getString("result");
+
+                // Convert the hexadecimal string to a BigInteger
+                BigInteger result = new BigInteger(resultHex.substring(2), 16);
+                System.out.println("Expiration Time: " + unix2UTC(result));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            client.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return status;
+    }
+
+    public static boolean getExpirationTimeWithJSONObject(String provider, String whispeerContractAddress, String adminAddress, String aliceAddress)  {
+
+        boolean status = false;
+        AsyncHttpClient client = new DefaultAsyncHttpClient();
+
+        Function function = new Function(
+                "getExpirationTime",
+                Collections.singletonList(new Address(aliceAddress)), // Function parameters
+                Collections.singletonList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.generated.Uint256>() { })); // Return type
+
+        String encodedFunction = FunctionEncoder.encode(function);
+        
+        String from = adminAddress;
+        String to = whispeerContractAddress;
+        String data = encodedFunction;
+        //Transaction transaction = new Transaction(from, null, null, null, to, null, data, null, null, null);
+        String body = null;
+
+        try {
+            // Create the innermost JSON object
+            JSONObject innerObject = new JSONObject();
+            innerObject.put("to", to);
+            innerObject.put("from", from);
+            innerObject.put("data", data);
+
+            // Create the JSON array for "params" and add the inner object and the string
+            JSONArray paramsArray = new JSONArray();
+            paramsArray.put(innerObject);
+            paramsArray.put("latest");
+
+            // Create the outer JSON object
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", 1);
+            jsonObject.put("jsonrpc", "2.0");
+            jsonObject.put("method", "eth_call");
+            jsonObject.put("params", paramsArray);
+
+            body = jsonObject.toString();
+            System.out.println(jsonObject.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        try {
+
+            Response response = client.prepare("POST", provider)
+                      .setHeader("accept", "application/json")
+                      .setHeader("content-type", "application/json")
+                      .setBody(body)
+                      .execute()
+                      .toCompletableFuture()
+                      .join();
+
+            if (response.getStatusCode() == 200) {
+                String jsonResponse = response.getResponseBody();
+                System.out.println("Response: " + jsonResponse);
+                status = true;
+
+                // Parse the JSON response using org.json.JSONObject
+                JSONObject jsonObject = new JSONObject(jsonResponse);
+
+                // Get the "result" value as a hexadecimal string
+                String resultHex = jsonObject.getString("result");
+
+                // Convert the hexadecimal string to a BigInteger
+                BigInteger result = new BigInteger(resultHex.substring(2), 16);
+                System.out.println("Expiration Time: " + unix2UTC(result));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            client.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return status;
+    }
+
     private static String unix2UTC(BigInteger timestamp) {
         // Convert the timestamp to an Instant
         Instant instant = Instant.ofEpochSecond(timestamp.longValue());
@@ -181,4 +331,5 @@ public class Web3jWhispeerGetExpirationTime {
         //System.out.println("UTC DateTime: " + utcDateTime);
         return utcDateTime;
     }
+
 }

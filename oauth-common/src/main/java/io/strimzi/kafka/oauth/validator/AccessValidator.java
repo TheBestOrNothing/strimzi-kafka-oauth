@@ -19,24 +19,23 @@ import io.strimzi.kafka.oauth.common.WEB3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import static io.strimzi.kafka.oauth.validator.TokenValidationException.Status;
 
 import org.web3j.abi.FunctionEncoder;
-import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.Type;
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.request.Transaction;
-import org.web3j.protocol.core.methods.response.EthCall;
-import org.web3j.protocol.http.HttpService;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.Response;
+
 
 /**
  * This class is responsible for validating the JWT token signatures during session authentication.
@@ -85,7 +84,8 @@ public class AccessValidator {
         }
 
         BigInteger expirationTime = whiteList.get(address);
-        if (expirationTime != null && expirationTime.longValue() > current) {
+        if (expirationTime != null && expirationTime.longValue() >= current) {
+            log.debug("{} have been in the whiteList, no need to validate again", address);
             return true;
         }
 
@@ -94,7 +94,8 @@ public class AccessValidator {
             return false;
         }
 
-        Web3j web3j = Web3j.build(new HttpService(provider)); 
+        //If there is no specified user(address) in the whiteList,
+        //the expirationTime of the user should be retrieved from the smart contract
         Function function = new Function(
                 "getExpirationTime",
                 Collections.singletonList(new Address(address)), // Function parameters
@@ -103,25 +104,70 @@ public class AccessValidator {
         String encodedFunction = FunctionEncoder.encode(function);
 
         //from = admin; to = whispeerAddress; data = encodedFunction;
-        Transaction transaction = new Transaction(adminAdress, null, null, null, whispeerAdress, null, encodedFunction, null, null, null);
-        EthCall response = null;
+        //Transaction transaction = new Transaction(adminAdress, null, null, null, whispeerAdress, null, encodedFunction, null, null, null);
+        String body = null;
+        AsyncHttpClient client = new DefaultAsyncHttpClient();
+
+        // Create the innermost JSON object
+        JSONObject innerObject = new JSONObject();
+        innerObject.put("to", whispeerAdress);
+        innerObject.put("from", adminAdress);
+        innerObject.put("data", encodedFunction);
+
+        // Create the JSON array for "params" and add the inner object and the string
+        JSONArray paramsArray = new JSONArray();
+        paramsArray.put(innerObject);
+        paramsArray.put("latest");
+
+        // Create the outer JSON object
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("id", 1);
+        jsonObject.put("jsonrpc", "2.0");
+        jsonObject.put("method", "eth_call");
+        jsonObject.put("params", paramsArray);
+
+        body = jsonObject.toString();
+        System.out.println(jsonObject.toString());
+        
         try {
-            response = web3j.ethCall(transaction, DefaultBlockParameterName.LATEST).send();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
+
+            Response response = client.prepare("POST", provider)
+                      .setHeader("accept", "application/json")
+                      .setHeader("content-type", "application/json")
+                      .setBody(body)
+                      .execute()
+                      .toCompletableFuture()
+                      .join();
+
+            if (response.getStatusCode() == 200) {
+                String responseStr = response.getResponseBody();
+                System.out.println("Response: " + responseStr);
+                status = true;
+
+                // Parse the JSON response using org.json.JSONObject
+                JSONObject responseJson = new JSONObject(responseStr);
+
+                // Get the "result" value as a hexadecimal string
+                String resultHex = responseJson.getString("result");
+
+                // Convert the hexadecimal string to a BigInteger
+                expirationTime = new BigInteger(resultHex.substring(2), 16);
+            }
+
+        } catch (Exception e) {
             e.printStackTrace();
-            return false;
+        } finally {
+            try {
+                client.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
-
-        List<Type> result = FunctionReturnDecoder.decode(
-                response.getValue(),
-                function.getOutputParameters());
-
-        expirationTime = (BigInteger) result.get(0).getValue();
 
         System.out.println("User's expiration time: " + expirationTime);
         System.out.println("Current system time: " + current);
-        if (expirationTime.longValue() >= current) {
+        if (expirationTime != null && expirationTime.longValue() >= current) {
             whiteList.put(address, expirationTime);
             status = true;
         } else {
@@ -132,8 +178,6 @@ public class AccessValidator {
             status = false;
         }
 
-        // Shut down the provider
-        web3j.shutdown();
         return status;
     }
 
